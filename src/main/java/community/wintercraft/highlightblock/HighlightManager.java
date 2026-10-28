@@ -42,6 +42,10 @@ public class HighlightManager {
     private int outlineColor = 0xFFD000FF; // Vibrant electric purple
     private int highlightColor = 0xFFEE00;
 
+    // Render & scan distance settings (in blocks)
+    private int renderDistance = 64; // Default 64 blocks (previously was only 24)
+    private int verticalDistance = 32; // Default 32 blocks up/down
+
     private final Set<String> highlightedBlockIds = new HashSet<>();
     private final HighlightTintSource tintSource = new HighlightTintSource();
 
@@ -150,6 +154,24 @@ public class HighlightManager {
 
     public void setHaloWidth(float haloWidth) {
         this.haloWidth = Math.max(1.0f, Math.min(15.0f, haloWidth));
+        save();
+    }
+
+    public int getRenderDistance() {
+        return renderDistance;
+    }
+
+    public void setRenderDistance(int renderDistance) {
+        this.renderDistance = Math.max(16, Math.min(256, renderDistance));
+        save();
+    }
+
+    public int getVerticalDistance() {
+        return verticalDistance;
+    }
+
+    public void setVerticalDistance(int verticalDistance) {
+        this.verticalDistance = Math.max(8, Math.min(128, verticalDistance));
         save();
     }
 
@@ -266,6 +288,8 @@ public class HighlightManager {
             data.outlineColor = this.outlineColor;
             data.outlineWidth = this.outlineWidth;
             data.haloWidth = this.haloWidth;
+            data.renderDistance = this.renderDistance;
+            data.verticalDistance = this.verticalDistance;
             data.highlightColor = this.highlightColor;
             data.highlightedBlocks = this.highlightedBlockIds;
             try (FileWriter writer = new FileWriter(file)) {
@@ -300,6 +324,8 @@ public class HighlightManager {
                         this.outlineColor = data.outlineColor != 0 ? data.outlineColor : 0xFFD000FF;
                         this.outlineWidth = data.outlineWidth > 0 ? data.outlineWidth : 2.2f;
                         this.haloWidth = data.haloWidth > 0 ? data.haloWidth : 5.2f;
+                        this.renderDistance = data.renderDistance >= 16 ? data.renderDistance : 64;
+                        this.verticalDistance = data.verticalDistance >= 8 ? data.verticalDistance : 32;
                         this.highlightColor = data.highlightColor != 0 ? data.highlightColor : 0xFFEE00;
                         if (data.highlightedBlocks != null) {
                             this.highlightedBlockIds.clear();
@@ -325,6 +351,8 @@ public class HighlightManager {
         int outlineColor = 0xFFD000FF;
         float outlineWidth = 2.2f;
         float haloWidth = 5.2f;
+        int renderDistance = 64;
+        int verticalDistance = 32;
         int highlightColor = 0xFFEE00;
         Set<String> highlightedBlocks = new HashSet<>();
     }

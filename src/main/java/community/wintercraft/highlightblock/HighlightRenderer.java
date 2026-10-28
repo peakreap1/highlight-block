@@ -4,12 +4,16 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientChunkCache;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
@@ -18,8 +22,6 @@ import java.util.Collections;
 import java.util.List;
 
 public class HighlightRenderer {
-    private static final int SCAN_RADIUS_XZ = 24;
-    private static final int SCAN_RADIUS_Y = 16;
     private static List<BlockPos> cachedBlocks = Collections.emptyList();
     private static int tickCounter = 0;
 
@@ -44,17 +46,33 @@ public class HighlightRenderer {
             float speed = manager.getAnimationSpeed();
             HighlightManager.AnimationMode mode = manager.getAnimationMode();
 
+            double maxDist = manager.getRenderDistance();
+            double maxDistSq = maxDist * maxDist;
+            double fadeStart = maxDist * 0.8;
+            double fadeStartSq = fadeStart * fadeStart;
+
             double time = (System.currentTimeMillis() % 100_000_000L) / 1000.0 * speed;
 
             List<BlockPos> blocksToRender = cachedBlocks;
             for (BlockPos pos : blocksToRender) {
-                BlockState state = mc.level.getBlockState(pos);
-                VoxelShape shape = state.getShape(mc.level, pos);
-                if (shape.isEmpty()) continue;
-
                 double rx = pos.getX() - camPos.x();
                 double ry = pos.getY() - camPos.y();
                 double rz = pos.getZ() - camPos.z();
+                double distSq = rx * rx + ry * ry + rz * rz;
+
+                if (distSq > maxDistSq) continue;
+
+                // Smooth distance fade near edge of render distance
+                float fade = 1.0f;
+                if (distSq > fadeStartSq) {
+                    double dist = Math.sqrt(distSq);
+                    fade = (float) (1.0 - (dist - fadeStart) / (maxDist - fadeStart));
+                    if (fade <= 0.05f) continue;
+                }
+
+                BlockState state = mc.level.getBlockState(pos);
+                VoxelShape shape = state.getShape(mc.level, pos);
+                if (shape.isEmpty()) continue;
 
                 poseStack.pushPose();
                 poseStack.translate(rx, ry, rz);
@@ -73,10 +91,10 @@ public class HighlightRenderer {
                         int b = rgb & 0xFF;
 
                         float pulse = (float) ((Math.sin(time * 3.5 + (pos.getX() + pos.getZ()) * 0.3) + 1.0) * 0.5);
-                        int haloAlpha = (int) (70 + 70 * pulse);
+                        int haloAlpha = (int) ((70 + 70 * pulse) * fade);
                         haloColor = (haloAlpha << 24) | (r << 16) | (g << 8) | b;
 
-                        int coreAlpha = (int) (210 + 45 * pulse);
+                        int coreAlpha = (int) ((210 + 45 * pulse) * fade);
                         int cr = Math.min(255, (int) (r * 0.7f + 75));
                         int cg = Math.min(255, (int) (g * 0.7f + 75));
                         int cb = Math.min(255, (int) (b * 0.7f + 75));
@@ -91,10 +109,10 @@ public class HighlightRenderer {
                         int g = (int) (180 + 75 * t);
                         int b = 255;
 
-                        int haloAlpha = (int) (80 + 70 * t);
+                        int haloAlpha = (int) ((80 + 70 * t) * fade);
                         haloColor = (haloAlpha << 24) | (r << 16) | (g << 8) | b;
 
-                        int coreAlpha = (int) (215 + 40 * t);
+                        int coreAlpha = (int) ((215 + 40 * t) * fade);
                         int cr = Math.min(255, r + 60);
                         int cg = 255;
                         int cb = 255;
@@ -109,10 +127,10 @@ public class HighlightRenderer {
                         int g = (int) (140 + 95 * t);
                         int b = (int) (10 + 40 * t);
 
-                        int haloAlpha = (int) (80 + 70 * t);
+                        int haloAlpha = (int) ((80 + 70 * t) * fade);
                         haloColor = (haloAlpha << 24) | (r << 16) | (g << 8) | b;
 
-                        int coreAlpha = (int) (215 + 40 * t);
+                        int coreAlpha = (int) ((215 + 40 * t) * fade);
                         int cr = 255;
                         int cg = Math.min(255, g + 40);
                         int cb = Math.min(255, b + 60);
@@ -120,8 +138,10 @@ public class HighlightRenderer {
                     }
                     case STATIC -> {
                         int base = manager.getOutlineColor();
-                        haloColor = (0x60 << 24) | (base & 0x00FFFFFF);
-                        coreColor = (0xFA << 24) | (base & 0x00FFFFFF);
+                        int haloAlpha = (int) (0x60 * fade);
+                        int coreAlpha = (int) (0xFA * fade);
+                        haloColor = (haloAlpha << 24) | (base & 0x00FFFFFF);
+                        coreColor = (coreAlpha << 24) | (base & 0x00FFFFFF);
                     }
                     case NEON_PURPLE -> {
                         // Animated glowing neon purple texturepack style:
@@ -135,11 +155,11 @@ public class HighlightRenderer {
                         int b = 255;
 
                         // Outer soft glowing aura / bloom halo
-                        int haloAlpha = (int) (85 + 75 * t);
+                        int haloAlpha = (int) ((85 + 75 * t) * fade);
                         haloColor = (haloAlpha << 24) | (r << 16) | (g << 8) | b;
 
                         // Inner intense luminous filament
-                        int coreAlpha = (int) (220 + 35 * t);
+                        int coreAlpha = (int) ((220 + 35 * t) * fade);
                         int cr = Math.min(255, r + 45);
                         int cg = Math.min(255, g + 85);
                         int cb = 255;
@@ -151,9 +171,9 @@ public class HighlightRenderer {
                         int r = (int) (150 + 105 * t);
                         int g = (int) (15 + 65 * t);
                         int b = 255;
-                        int haloAlpha = (int) (85 + 75 * t);
+                        int haloAlpha = (int) ((85 + 75 * t) * fade);
                         haloColor = (haloAlpha << 24) | (r << 16) | (g << 8) | b;
-                        int coreAlpha = (int) (220 + 35 * t);
+                        int coreAlpha = (int) ((220 + 35 * t) * fade);
                         int cr = Math.min(255, r + 45);
                         int cg = Math.min(255, g + 85);
                         int cb = 255;
@@ -162,7 +182,7 @@ public class HighlightRenderer {
                 }
 
                 // Pass 1: Outer soft glowing halo (bloom aura)
-                if (haloEnabled) {
+                if (haloEnabled && ((haloColor >>> 24) > 0)) {
                     collector.submitShapeOutline(
                             poseStack,
                             shape,
@@ -174,14 +194,16 @@ public class HighlightRenderer {
                 }
 
                 // Pass 2: Inner bright neon core
-                collector.submitShapeOutline(
-                        poseStack,
-                        shape,
-                        RenderTypes.linesTranslucent(),
-                        coreColor,
-                        coreWidth,
-                        seeThrough
-                );
+                if ((coreColor >>> 24) > 0) {
+                    collector.submitShapeOutline(
+                            poseStack,
+                            shape,
+                            RenderTypes.linesTranslucent(),
+                            coreColor,
+                            coreWidth,
+                            seeThrough
+                    );
+                }
 
                 poseStack.popPose();
             }
@@ -190,41 +212,65 @@ public class HighlightRenderer {
 
     public static void clientTick(Minecraft mc) {
         if (mc.level == null || mc.player == null) return;
-        if (!HighlightManager.getInstance().isEnabled()) {
+        HighlightManager manager = HighlightManager.getInstance();
+        if (!manager.isEnabled() || !manager.isOutlineEnabled()) {
             cachedBlocks = Collections.emptyList();
             return;
         }
 
         tickCounter++;
-        // Scan every 3 ticks (~6 times per second) for super responsive yet lightweight updates
-        if (tickCounter % 3 != 0) return;
+        // Scan every 4 ticks (~5 times per second)
+        if (tickCounter % 4 != 0) return;
 
         BlockPos playerPos = mc.player.blockPosition();
-        Level level = mc.level;
-        HighlightManager manager = HighlightManager.getInstance();
-
-        List<BlockPos> visibleList = new ArrayList<>();
-        BlockPos.MutableBlockPos mpos = new BlockPos.MutableBlockPos();
-        BlockPos.MutableBlockPos neighborPos = new BlockPos.MutableBlockPos();
+        ClientLevel level = mc.level;
+        ClientChunkCache chunkSource = level.getChunkSource();
 
         int px = playerPos.getX();
         int py = playerPos.getY();
         int pz = playerPos.getZ();
 
-        for (int y = -SCAN_RADIUS_Y; y <= SCAN_RADIUS_Y; y++) {
-            for (int x = -SCAN_RADIUS_XZ; x <= SCAN_RADIUS_XZ; x++) {
-                for (int z = -SCAN_RADIUS_XZ; z <= SCAN_RADIUS_XZ; z++) {
-                    mpos.set(px + x, py + y, pz + z);
-                    BlockState state = level.getBlockState(mpos);
+        int radius = manager.getRenderDistance();
+        int maxDistSq = radius * radius;
+        int chunkRadius = (radius + 15) >> 4;
+        int centerChunkX = px >> 4;
+        int centerChunkZ = pz >> 4;
 
-                    if (manager.isHighlighted(state.getBlock())) {
-                        // Check if block has at least one exposed/visible face (fair play: not hidden in solid rock)
-                        if (isExposed(level, mpos, neighborPos)) {
-                            visibleList.add(mpos.immutable());
+        int vDist = manager.getVerticalDistance();
+        int minY = Math.max(level.getMinY(), py - vDist);
+        int maxY = Math.min(level.getMaxY(), py + vDist);
+
+        List<BlockPos> visibleList = new ArrayList<>();
+        BlockPos.MutableBlockPos neighborPos = new BlockPos.MutableBlockPos();
+
+        for (int cx = centerChunkX - chunkRadius; cx <= centerChunkX + chunkRadius; cx++) {
+            for (int cz = centerChunkZ - chunkRadius; cz <= centerChunkZ + chunkRadius; cz++) {
+                LevelChunk chunk = chunkSource.getChunk(cx, cz, ChunkStatus.FULL, false);
+                if (chunk == null) continue;
+
+                // Palette-accelerated chunk scan: skips empty/unrelated 16x16x16 sections in microseconds
+                chunk.findBlocks(
+                        state -> manager.isHighlighted(state.getBlock()),
+                        (bpos, state) -> {
+                            int by = bpos.getY();
+                            if (by < minY || by > maxY) return;
+
+                            int dx = bpos.getX() - px;
+                            int dy = by - py;
+                            int dz = bpos.getZ() - pz;
+                            if (dx * dx + dy * dy + dz * dz > maxDistSq) return;
+
+                            // Check if block has at least one exposed/visible face (fair play: not hidden in solid rock)
+                            if (isExposed(level, bpos, neighborPos)) {
+                                visibleList.add(bpos.immutable());
+                            }
                         }
-                    }
-                }
+                );
+
+                // Safety guard to cap visible blocks collection
+                if (visibleList.size() >= 1500) break;
             }
+            if (visibleList.size() >= 1500) break;
         }
 
         cachedBlocks = visibleList;
