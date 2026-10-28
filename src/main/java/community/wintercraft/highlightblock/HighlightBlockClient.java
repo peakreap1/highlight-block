@@ -5,6 +5,7 @@ import community.wintercraft.highlightblock.gui.HighlightConfigScreen;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.ChatFormatting;
@@ -40,10 +41,16 @@ public class HighlightBlockClient implements ClientModInitializer {
                 category
         ));
 
+        // Auto-initialize pack on client startup (ensures fresh Modrinth downloads work out-of-the-box)
+        ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
+            HighlightManager.getInstance().ensurePackInitialized(client);
+        });
+
+        // Key handler with single-click consumption (prevents double triggers)
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null || client.level == null) return;
 
-            while (keyToggleTarget.consumeClick()) {
+            if (keyToggleTarget.consumeClick()) {
                 handleToggleTarget(client);
             }
         });
@@ -52,6 +59,13 @@ public class HighlightBlockClient implements ClientModInitializer {
     }
 
     private void handleToggleTarget(Minecraft client) {
+        // Prevent triggering while a reload is already taking place
+        if (HighlightManager.isReloading()) {
+            client.player.sendSystemMessage(Component.literal("[Highlight Block] Bitte kurz warten, Texturen werden noch geladen...")
+                    .withStyle(ChatFormatting.GRAY));
+            return;
+        }
+
         HitResult hit = client.hitResult;
         if (hit instanceof BlockHitResult blockHit && hit.getType() == HitResult.Type.BLOCK) {
             BlockPos pos = blockHit.getBlockPos();

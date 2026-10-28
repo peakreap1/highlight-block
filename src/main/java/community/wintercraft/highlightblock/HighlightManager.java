@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 public class HighlightManager {
     public static final String PACK_FOLDER_NAME = "Highlight Block";
@@ -48,6 +49,9 @@ public class HighlightManager {
     private final Set<String> highlightedBlockIds = new LinkedHashSet<>();
     private static byte[] exclamationBytesCache = null;
 
+    private static boolean reloading = false;
+    private static long lastReloadTime = 0;
+
     private HighlightManager() {
         // Default highlighted block: Andesite
         highlightedBlockIds.add(BuiltInRegistries.BLOCK.getKey(Blocks.ANDESITE).toString());
@@ -56,6 +60,10 @@ public class HighlightManager {
 
     public static HighlightManager getInstance() {
         return INSTANCE;
+    }
+
+    public static boolean isReloading() {
+        return reloading || (System.currentTimeMillis() - lastReloadTime < 2000);
     }
 
     public boolean isHighlighted(Block block) {
@@ -166,6 +174,64 @@ public class HighlightManager {
         return list;
     }
 
+    /**
+     * Ensures the resource pack folder, pack.mcmeta, and pack.png are created on disk.
+     * Guaranteed to work for fresh installs downloaded directly from Modrinth.
+     */
+    public void ensurePackInitialized(Minecraft mc) {
+        try {
+            Path resourcePackDir = mc.getResourcePackDirectory();
+            if (resourcePackDir == null) return;
+
+            Path packDir = resourcePackDir.resolve(PACK_FOLDER_NAME);
+            Files.createDirectories(packDir);
+
+            Path mcmeta = packDir.resolve("pack.mcmeta");
+            if (!Files.exists(mcmeta)) {
+                String metaContent = "{\n  \"pack\": {\n    \"pack_format\": 88,\n    \"min_format\": 84,\n    \"max_format\": 100,\n    \"description\": \"§e§lHighlight Block §7[26.2]\\n§6Dynamisches Block-Finder Texturepack (!)\"\n  }\n}";
+                Files.writeString(mcmeta, metaContent, StandardCharsets.UTF_8);
+            }
+
+            Path packPng = packDir.resolve("pack.png");
+            byte[] exclamationBytes = getExclamationMarkBytes();
+            if (!Files.exists(packPng) && exclamationBytes != null) {
+                Files.write(packPng, exclamationBytes);
+            }
+
+            // Write initial textures if not yet present
+            Path assetsDir = packDir.resolve("assets");
+            if (!Files.exists(assetsDir) && !highlightedBlockIds.isEmpty() && exclamationBytes != null) {
+                for (String idStr : highlightedBlockIds) {
+                    Identifier id = Identifier.tryParse(idStr);
+                    if (id != null) {
+                        Block block = BuiltInRegistries.BLOCK.getValue(id);
+                        if (block != null && block != Blocks.AIR) {
+                            Set<String> relPaths = getTexturePathsForBlock(mc, block);
+                            for (String relPath : relPaths) {
+                                Path targetFile = packDir.resolve(relPath);
+                                Files.createDirectories(targetFile.getParent());
+                                Files.write(targetFile, exclamationBytes);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Ensure the pack is registered in selected packs
+            PackRepository repo = mc.getResourcePackRepository();
+            repo.reload();
+            if (!highlightedBlockIds.isEmpty() && !repo.getSelectedIds().contains(PACK_ID)) {
+                List<String> selected = new ArrayList<>(repo.getSelectedIds());
+                selected.add(PACK_ID);
+                repo.setSelected(selected);
+                mc.options.updateResourcePacks(repo);
+                mc.options.save();
+            }
+        } catch (Exception e) {
+            LOGGER.error("[HighlightBlock] Failed to initialize default pack", e);
+        }
+    }
+
     public void applyTexturePack(Minecraft mc) {
         mc.execute(() -> {
             try {
@@ -239,10 +305,21 @@ public class HighlightManager {
                     LOGGER.info("[HighlightBlock] Pack selection updated. Selected: {}", repo.getSelectedIds());
                 }
 
-                // Reload resources so the game loads the newly generated textures
-                mc.reloadResourcePacks();
-                LOGGER.info("[HighlightBlock] Reloaded resource packs.");
+                // Debounce reload to prevent double loadscreens
+                reloading = true;
+                lastReloadTime = System.currentTimeMillis();
+
+                CompletableFuture<Void> future = mc.reloadResourcePacks();
+                if (future != null) {
+                    future.whenComplete((res, err) -> {
+                        reloading = false;
+                        LOGGER.info("[HighlightBlock] Reload finished successfully.");
+                    });
+                } else {
+                    reloading = false;
+                }
             } catch (Exception e) {
+                reloading = false;
                 LOGGER.error("[HighlightBlock] Failed to apply texture pack", e);
             }
         });
