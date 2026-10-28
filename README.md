@@ -1,35 +1,43 @@
 # 🌟 Highlight Block
 
-**Highlight Block** ist eine leichtgewichtige, performante und 100 % faire Client-Side-Mod für Minecraft Fabric (ab Version 26.2). Sie ermöglicht es dir, beliebige Blöcke in der Spielwelt mit einer leuchtenden Signalfarbe (leuchtendes Gelb) hervorzuheben, damit du sie beim Erkunden, Minen oder Bauen sofort erkennst!
+**Highlight Block** ist eine ultra-performante, faire und unkomplizierte Client-Side-Mod für Minecraft Fabric (ab Version 26.2). Sie verwandelt jeden beliebigen Block in der Spielwelt per Knopfdruck in ein **leuchtendes gelbes Ausrufezeichen (!)**, damit du ihn beim Minen, Erkunden, Farmen oder Bauen auf jede Distanz sofort erkennst!
 
 ---
 
 ### ✨ Features
 
 * **🎯 Block anvisieren & Hotkey drücken (`H`):**
-  Schaue einfach den Block an, den du hervorheben möchtest (z. B. Andesit, Tiefenschiefer-Diamanterz, Antiker Schrott) und drücke **`H`**. Der Block leuchtet sofort auf! Erneutes Drücken schaltet ihn wieder ab.
-* **💡 Höhlen-Sichtbarkeit (Fullbright-Glow):**
-  Hervorgehobene Blöcke leuchten optisch auch in tiefen, dunklen Höhlen, sodass du wertvolle Erze oder Gesteinsschichten sofort siehst.
+  Schaue einfach den Block an, den du hervorheben möchtest (z. B. Andesit, Tiefenschiefer-Diamanterz, Antiker Schrott) und drücke **`H`**. Die Textur wechselt automatisch zum auffälligen gelben Ausrufezeichen! Nochmaliges Drücken setzt die Textur wieder auf das Original zurück.
+* **⚡ 0 % FPS-Verlust & Maximale Render-Distanz:**
+  Weil die Mod keine rechenintensiven Shader oder Render-Overlays nutzt, sondern ein dynamisches, natives In-Game-Texturpaket im Hintergrund verwaltet, hast du **absolut null Lag** – egal ob 12 oder 128 Chunks Sichtweite!
+* **💡 Perfekte Höhlen-Sichtbarkeit:**
+  Das gelbe Ausrufezeichen sticht mit hohem Kontrast und dunklem Hintergrund selbst in pechschwarzen Schluchten und Höhlen sofort ins Auge.
 * **🚫 100 % Fair (Kein X-Ray / Wallhack):**
-  Die Mod verändert ausschließlich das Rendering sichtbarer Blöcke. Es werden **keine** verdeckten Blöcke durch feste Steinwände hindurch sichtbar gemacht. Völlig legitim auf jedem Multiplayer-Server!
-* **⚡ Null FPS-Verlust (Sodium & Iris kompatibel):**
-  Wird direkt in die Chunk-Render-Pipeline integriert – läuft butterweich mit voller Bildrate.
-* **⌨️ Schnelle Befehle (`/highlightblock` oder `/hb`):**
-  * `/hb toggle` – Schaltet die Mod global an oder aus (auch per Taste `B`).
-  * `/hb list` – Zeigt alle aktuell hervorgehobenen Blöcke an.
-  * `/hb clear` – Setzt alle Hervorhebungen zurück.
-* **💾 Automatische Speicherung:**
-  Deine ausgewählten Blöcke werden automatisch in `config/highlightblock.json` gespeichert.
+  Die Mod verändert ausschließlich sichtbare Texturen von Blöcken. Es werden **keine** verdeckten Blöcke durch Steinwände hindurch gerendert. Völlig legitim auf jedem Multiplayer-Server!
+* **⚙️ Mod Menu & Konfigurationsmenü:**
+  Vollständige Unterstützung für **Mod Menu**! Du kannst die Konfiguration direkt in den Einstellungen oder im Chat öffnen:
+  * `/hb gui` oder `/hb config` – Öffnet das Einstellungsmenü
+  * `/hb list` – Zeigt alle aktuell hervorgehobenen Blöcke an
+  * `/hb clear` – Setzt alle Auswahlen zurück
+* **🔌 Funktioniert Out-of-the-Box:**
+  Einfach in den `mods`-Ordner werfen und loslegen. Keine manuelle Texturepack-Einrichtung notwendig!
 
 ---
 
-### 🎮 Standard-Tastenbelegung
-* **`H`**: Anvisierten Block hervorheben / entfernen
-* **`B`**: Mod-Hervorhebung global an- und ausschalten
+### 🎮 Steuerung & Tastaturkürzel
+* **`H`**: Block anvisieren und Textur umschalten (Ausrufezeichen an/aus)
 
-*(Alle Tasten können im normalen Minecraft-Steuerungsmenü unter "Highlight Block" angepasst werden).*
+*(Die Taste kann im normalen Minecraft-Steuerungsmenü unter Optionen -> Steuerung -> Tastenbelegung -> "Highlight Block" beliebig angepasst werden).*
 
 ---
 
-### 📦 Lizenz
+### 📦 Voraussetzungen
+* Minecraft Fabric 26.2+
+* Fabric Loader 0.16.0+
+* Fabric API
+* *(Optional)* Mod Menu
+
+---
+
+### 📄 Lizenz
 MIT License © 2026 Richard & Wintercraft Community
