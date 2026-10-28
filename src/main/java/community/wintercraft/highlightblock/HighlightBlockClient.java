@@ -26,7 +26,6 @@ public class HighlightBlockClient implements ClientModInitializer {
     public static final String MOD_ID = "highlightblock";
 
     private static KeyMapping keyToggleTarget;
-    private static KeyMapping keyToggleAll;
 
     @Override
     public void onInitializeClient() {
@@ -41,22 +40,11 @@ public class HighlightBlockClient implements ClientModInitializer {
                 category
         ));
 
-        keyToggleAll = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-                "key.highlightblock.toggle_all",
-                InputConstants.Type.KEYSYM,
-                GLFW.GLFW_KEY_B,
-                category
-        ));
-
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null || client.level == null) return;
 
             while (keyToggleTarget.consumeClick()) {
                 handleToggleTarget(client);
-            }
-
-            while (keyToggleAll.consumeClick()) {
-                handleToggleAll(client);
             }
         });
 
@@ -76,7 +64,7 @@ public class HighlightBlockClient implements ClientModInitializer {
                 Component msg = Component.literal("[Highlight Block] ")
                         .withStyle(ChatFormatting.GOLD)
                         .append(Component.literal(block.getName().getString()).withStyle(ChatFormatting.WHITE))
-                        .append(Component.literal(active ? " [Gelbes '!' Textur AKTIV]" : " [Textur ENTFERNT]")
+                        .append(Component.literal(active ? " [Gelbes '!' Textur AKTIV]" : " [Normal zurückgesetzt]")
                                 .withStyle(active ? ChatFormatting.YELLOW : ChatFormatting.GRAY));
                 client.player.sendSystemMessage(msg);
             }
@@ -84,15 +72,6 @@ public class HighlightBlockClient implements ClientModInitializer {
             client.player.sendSystemMessage(Component.literal("[Highlight Block] Schaue einen Block an, um ihn hervorzuheben!")
                     .withStyle(ChatFormatting.RED));
         }
-    }
-
-    private void handleToggleAll(Minecraft client) {
-        boolean enabled = HighlightManager.getInstance().toggleEnabled(client);
-        Component msg = Component.literal("[Highlight Block] Texturepack ist jetzt ")
-                .withStyle(ChatFormatting.GOLD)
-                .append(Component.literal(enabled ? "AKTIVIERT" : "DEAKTIVIERT")
-                        .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.RED));
-        client.player.sendSystemMessage(msg);
     }
 
     private void registerCommands() {
@@ -108,13 +87,6 @@ public class HighlightBlockClient implements ClientModInitializer {
                             .executes(context -> {
                                 Minecraft client = Minecraft.getInstance();
                                 client.execute(() -> client.gui.setScreen(new HighlightConfigScreen(client.gui.screen())));
-                                return 1;
-                            }))
-                    .then(ClientCommands.literal("toggle")
-                            .executes(context -> {
-                                Minecraft client = Minecraft.getInstance();
-                                boolean en = HighlightManager.getInstance().toggleEnabled(client);
-                                context.getSource().sendFeedback(Component.literal("[Highlight Block] Texturepack Aktiv: " + en).withStyle(ChatFormatting.GOLD));
                                 return 1;
                             }))
                     .then(ClientCommands.literal("clear")

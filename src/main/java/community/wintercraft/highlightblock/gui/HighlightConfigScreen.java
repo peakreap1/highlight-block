@@ -3,7 +3,6 @@ package community.wintercraft.highlightblock.gui;
 import community.wintercraft.highlightblock.HighlightManager;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -27,20 +26,7 @@ public class HighlightConfigScreen extends Screen {
         int buttonHeight = 20;
         int centerX = this.width / 2 - buttonWidth / 2;
 
-        int startY = 45;
-        int spacing = 26;
-
-        // Button 1: Texturepack On/Off
-        addRenderableWidget(
-                CycleButton.onOffBuilder(manager.isEnabled())
-                        .create(
-                                centerX, startY, buttonWidth, buttonHeight,
-                                Component.literal("Texturepack"),
-                                (button, value) -> manager.setEnabled(value, this.minecraft)
-                        )
-        );
-
-        // Button 2: Clear Selection
+        // Button 1: Clear Selection
         int selectedCount = manager.getHighlightedBlockIds().size();
         addRenderableWidget(
                 Button.builder(
@@ -50,11 +36,11 @@ public class HighlightConfigScreen extends Screen {
                                     btn.setMessage(Component.literal("Auswahl geleert (0 aktiv)"));
                                 }
                         )
-                        .bounds(centerX, startY + spacing, buttonWidth, buttonHeight)
+                        .bounds(centerX, 45, buttonWidth, buttonHeight)
                         .build()
         );
 
-        // Button 3: Done Button
+        // Button 2: Done Button
         addRenderableWidget(
                 Button.builder(CommonComponents.GUI_DONE, btn -> onClose())
                         .bounds(centerX, this.height - 30, buttonWidth, buttonHeight)
@@ -75,7 +61,7 @@ public class HighlightConfigScreen extends Screen {
         HighlightManager manager = HighlightManager.getInstance();
         Set<String> blocks = manager.getHighlightedBlockIds();
 
-        int y = 110;
+        int y = 78;
         extractor.centeredText(this.font, Component.literal("Aktive Blöcke mit gelbem Ausrufezeichen (!):"), this.width / 2, y, 0xFFFFFFFF);
         y += 16;
 

@@ -16,6 +16,8 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileReader;
@@ -38,11 +40,11 @@ import java.util.Set;
 public class HighlightManager {
     public static final String PACK_FOLDER_NAME = "Highlight Block";
     public static final String PACK_ID = "file/" + PACK_FOLDER_NAME;
+    private static final Logger LOGGER = LoggerFactory.getLogger("HighlightBlock");
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final HighlightManager INSTANCE = new HighlightManager();
 
-    private boolean enabled = true;
     private final Set<String> highlightedBlockIds = new LinkedHashSet<>();
     private static byte[] exclamationBytesCache = null;
 
@@ -54,27 +56,6 @@ public class HighlightManager {
 
     public static HighlightManager getInstance() {
         return INSTANCE;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled, Minecraft mc) {
-        this.enabled = enabled;
-        save();
-        if (mc != null) {
-            applyTexturePack(mc);
-        }
-    }
-
-    public boolean toggleEnabled(Minecraft mc) {
-        this.enabled = !this.enabled;
-        save();
-        if (mc != null) {
-            applyTexturePack(mc);
-        }
-        return this.enabled;
     }
 
     public boolean isHighlighted(Block block) {
@@ -120,10 +101,11 @@ public class HighlightManager {
         try (InputStream in = HighlightManager.class.getResourceAsStream("/assets/highlightblock/textures/block/exclamation_mark.png")) {
             if (in != null) {
                 exclamationBytesCache = in.readAllBytes();
+                LOGGER.info("[HighlightBlock] Loaded exclamation mark texture bytes: {} bytes", exclamationBytesCache.length);
                 return exclamationBytesCache;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("[HighlightBlock] Failed to load exclamation mark texture", e);
         }
         return null;
     }
@@ -136,7 +118,7 @@ public class HighlightManager {
         String ns = blockId.getNamespace();
         String path = blockId.getPath();
 
-        // Extract textures from the live block model quads
+        // 1. Extract textures from live block model quads
         try {
             BlockState defaultState = block.defaultBlockState();
             if (mc != null && mc.getModelManager() != null) {
@@ -152,7 +134,9 @@ public class HighlightManager {
                                 if (quads != null) {
                                     for (BakedQuad q : quads) {
                                         Identifier tex = q.materialInfo().sprite().contents().name();
-                                        list.add("assets/" + tex.getNamespace() + "/textures/" + tex.getPath() + ".png");
+                                        if (tex != null && tex.getPath().contains(path)) {
+                                            list.add("assets/" + tex.getNamespace() + "/textures/" + tex.getPath() + ".png");
+                                        }
                                     }
                                 }
                             }
@@ -160,20 +144,25 @@ public class HighlightManager {
                             if (unculled != null) {
                                 for (BakedQuad q : unculled) {
                                     Identifier tex = q.materialInfo().sprite().contents().name();
-                                    list.add("assets/" + tex.getNamespace() + "/textures/" + tex.getPath() + ".png");
+                                    if (tex != null && tex.getPath().contains(path)) {
+                                        list.add("assets/" + tex.getNamespace() + "/textures/" + tex.getPath() + ".png");
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        } catch (Throwable ignored) {}
+        } catch (Throwable t) {
+            LOGGER.warn("[HighlightBlock] Error inspecting model for block {}", blockId, t);
+        }
 
-        // Guaranteed standard fallbacks for any block
+        // 2. Guaranteed standard texture paths
         list.add("assets/" + ns + "/textures/block/" + path + ".png");
-        list.add("assets/" + ns + "/textures/block/" + path + "_side.png");
         list.add("assets/" + ns + "/textures/block/" + path + "_top.png");
+        list.add("assets/" + ns + "/textures/block/" + path + "_side.png");
         list.add("assets/" + ns + "/textures/block/" + path + "_bottom.png");
+
         return list;
     }
 
@@ -198,14 +187,14 @@ public class HighlightManager {
                     Files.write(packPng, exclamationBytes);
                 }
 
-                // Clean existing textures
+                // Clean existing textures in packDir/assets
                 Path assetsDir = packDir.resolve("assets");
                 if (Files.exists(assetsDir)) {
                     deleteDirectoryRecursively(assetsDir);
                 }
 
-                // If enabled and has selected blocks, generate the exclamation mark textures
-                boolean shouldBeActive = enabled && !highlightedBlockIds.isEmpty();
+                // If we have selected blocks, generate the exclamation mark textures
+                boolean shouldBeActive = !highlightedBlockIds.isEmpty();
                 if (shouldBeActive && exclamationBytes != null) {
                     for (String idStr : highlightedBlockIds) {
                         Identifier id = Identifier.tryParse(idStr);
@@ -217,6 +206,7 @@ public class HighlightManager {
                                     Path targetFile = packDir.resolve(relPath);
                                     Files.createDirectories(targetFile.getParent());
                                     Files.write(targetFile, exclamationBytes);
+                                    LOGGER.info("[HighlightBlock] Generated texture: {}", relPath);
                                 }
                             }
                         }
@@ -246,12 +236,14 @@ public class HighlightManager {
                     repo.setSelected(selected);
                     mc.options.updateResourcePacks(repo);
                     mc.options.save();
+                    LOGGER.info("[HighlightBlock] Pack selection updated. Selected: {}", repo.getSelectedIds());
                 }
 
-                // Trigger resource reload (rebuilds atlas with the yellow exclamation mark)
+                // Reload resources so the game loads the newly generated textures
                 mc.reloadResourcePacks();
+                LOGGER.info("[HighlightBlock] Reloaded resource packs.");
             } catch (Exception e) {
-                e.printStackTrace();
+                LOGGER.error("[HighlightBlock] Failed to apply texture pack", e);
             }
         });
     }
@@ -289,7 +281,6 @@ public class HighlightManager {
                 parent.mkdirs();
             }
             ConfigData data = new ConfigData();
-            data.enabled = this.enabled;
             data.highlightedBlocks = new HashSet<>(this.highlightedBlockIds);
             try (FileWriter writer = new FileWriter(file)) {
                 GSON.toJson(data, writer);
@@ -305,12 +296,9 @@ public class HighlightManager {
             if (file.exists()) {
                 try (FileReader reader = new FileReader(file)) {
                     ConfigData data = GSON.fromJson(reader, ConfigData.class);
-                    if (data != null) {
-                        this.enabled = data.enabled;
-                        if (data.highlightedBlocks != null) {
-                            this.highlightedBlockIds.clear();
-                            this.highlightedBlockIds.addAll(data.highlightedBlocks);
-                        }
+                    if (data != null && data.highlightedBlocks != null) {
+                        this.highlightedBlockIds.clear();
+                        this.highlightedBlockIds.addAll(data.highlightedBlocks);
                     }
                 }
             }
@@ -320,7 +308,6 @@ public class HighlightManager {
     }
 
     private static class ConfigData {
-        boolean enabled = true;
         Set<String> highlightedBlocks = new HashSet<>();
     }
 }
