@@ -289,7 +289,7 @@ public class HighlightManager {
 
             Path mcmeta = packDir.resolve("pack.mcmeta");
             if (!Files.exists(mcmeta)) {
-                String metaContent = "{\n  \"pack\": {\n    \"pack_format\": 88,\n    \"min_format\": 84,\n    \"max_format\": 100,\n    \"description\": \"§e§lHighlight Block §7[26.2]\\n§6Dynamisches Block-Finder Texturepack (!)\"\n  }\n}";
+                String metaContent = "{\n  \"pack\": {\n    \"pack_format\": 88,\n    \"min_format\": 84,\n    \"max_format\": 100,\n    \"description\": \"§e§lHighlight Block §7[26.2]\\n§6Dynamic Block Spotlight Texture Pack (!)\"\n  }\n}";
                 Files.writeString(mcmeta, metaContent, StandardCharsets.UTF_8);
             }
 
@@ -350,7 +350,7 @@ public class HighlightManager {
 
                 // Write pack.mcmeta
                 Path mcmeta = packDir.resolve("pack.mcmeta");
-                String metaContent = "{\n  \"pack\": {\n    \"pack_format\": 88,\n    \"min_format\": 84,\n    \"max_format\": 100,\n    \"description\": \"§e§lHighlight Block §7[26.2]\\n§6Dynamisches Block-Finder Texturepack (!)\"\n  }\n}";
+                String metaContent = "{\n  \"pack\": {\n    \"pack_format\": 88,\n    \"min_format\": 84,\n    \"max_format\": 100,\n    \"description\": \"§e§lHighlight Block §7[26.2]\\n§6Dynamic Block Spotlight Texture Pack (!)\"\n  }\n}";
                 Files.writeString(mcmeta, metaContent, StandardCharsets.UTF_8);
 
                 // Write pack.png

@@ -1,5 +1,5 @@
 {
   "key.category.highlightblock.main": "Highlight Block",
-  "key.highlightblock.toggle_target": "Anvisierten Block hervorheben",
-  "key.highlightblock.toggle_all": "Highlight Block An/Aus"
+  "key.highlightblock.toggle_target": "Highlight Targeted Block",
+  "key.highlightblock.toggle_all": "Toggle Highlight Mod On/Off"
 }

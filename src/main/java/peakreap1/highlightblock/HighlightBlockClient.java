@@ -61,7 +61,7 @@ public class HighlightBlockClient implements ClientModInitializer {
     private void handleToggleTarget(Minecraft client) {
         // Prevent triggering while a reload is already taking place
         if (HighlightManager.isReloading(client)) {
-            client.player.sendSystemMessage(Component.literal("[Highlight Block] Bitte kurz warten, Texturen werden noch geladen...")
+            client.player.sendSystemMessage(Component.literal("[Highlight Block] Please wait, textures are loading...")
                     .withStyle(ChatFormatting.GRAY));
             return;
         }
@@ -78,12 +78,12 @@ public class HighlightBlockClient implements ClientModInitializer {
                 Component msg = Component.literal("[Highlight Block] ")
                         .withStyle(ChatFormatting.GOLD)
                         .append(Component.literal(block.getName().getString()).withStyle(ChatFormatting.WHITE))
-                        .append(Component.literal(active ? " [Gelbes '!' Textur AKTIV]" : " [Normal zurückgesetzt]")
+                        .append(Component.literal(active ? " [Spotlight Texture ACTIVE]" : " [Reset to Normal]")
                                 .withStyle(active ? ChatFormatting.YELLOW : ChatFormatting.GRAY));
                 client.player.sendSystemMessage(msg);
             }
         } else {
-            client.player.sendSystemMessage(Component.literal("[Highlight Block] Schaue einen Block an, um ihn hervorzuheben!")
+            client.player.sendSystemMessage(Component.literal("[Highlight Block] Look at a block to toggle highlight!")
                     .withStyle(ChatFormatting.RED));
         }
     }
@@ -107,16 +107,16 @@ public class HighlightBlockClient implements ClientModInitializer {
                             .executes(context -> {
                                 Minecraft client = Minecraft.getInstance();
                                 HighlightManager.getInstance().clearBlocks(client);
-                                context.getSource().sendFeedback(Component.literal("[Highlight Block] Alle Block-Auswahlen gelöscht.").withStyle(ChatFormatting.GOLD));
+                                context.getSource().sendFeedback(Component.literal("[Highlight Block] All block selections cleared.").withStyle(ChatFormatting.GOLD));
                                 return 1;
                             }))
                     .then(ClientCommands.literal("list")
                             .executes(context -> {
                                 Set<String> list = HighlightManager.getInstance().getHighlightedBlockIds();
                                 if (list.isEmpty()) {
-                                    context.getSource().sendFeedback(Component.literal("[Highlight Block] Keine Blöcke ausgewählt.").withStyle(ChatFormatting.GRAY));
+                                    context.getSource().sendFeedback(Component.literal("[Highlight Block] No blocks selected.").withStyle(ChatFormatting.GRAY));
                                 } else {
-                                    context.getSource().sendFeedback(Component.literal("[Highlight Block] Aktive Blöcke:").withStyle(ChatFormatting.GOLD));
+                                    context.getSource().sendFeedback(Component.literal("[Highlight Block] Active blocks:").withStyle(ChatFormatting.GOLD));
                                     for (String b : list) {
                                         context.getSource().sendFeedback(Component.literal(" - " + b).withStyle(ChatFormatting.WHITE));
                                     }

@@ -1,37 +1,37 @@
 # Highlight Block
 
-Highlight Block ist eine hochperformante, faire und unkomplizierte Client-Side-Mod fuer Minecraft Fabric (ab Version 26.2). Sie verwandelt jeden beliebigen Block in der Spielwelt per Knopfdruck in ein leuchtendes gelbes Ausrufezeichen (!), damit du ihn beim Minen, Erkunden, Farmen oder Bauen auf jede Distanz sofort erkennst.
+Highlight Block is a high-performance, fair, and lightweight client-side Fabric mod for Minecraft (26.2+). It instantly transforms any targeted block into a high-visibility glowing yellow exclamation mark (!) with a single keypress, making it effortless to spot specific blocks while mining, building, or exploring.
 
 ---
 
-### Features
+### Key Features
 
-* **Block anvisieren & Hotkey druecken (H):**
-  Schaue einfach den Block an, den du hervorheben moechtest (z. B. Andesit, Tiefenschiefer-Diamanterz, Antiker Schrott) und druecke **H**. Die Textur wechselt automatisch zum auffaelligen gelben Ausrufezeichen. Nochmaliges Druecken setzt die Textur wieder auf das Original zurueck.
-* **0 % FPS-Verlust & Maximale Render-Distanz:**
-  Weil die Mod keine rechenintensiven Shader oder Render-Overlays nutzt, sondern ein dynamisches Texturpaket im Hintergrund verwaltet, hast du keinerlei Framerate-Einbrueche - egal ob 12 oder 64 Chunks Sichtweite.
-* **Hohe Hoehlen-Sichtbarkeit:**
-  Das gelbe Ausrufezeichen hebt sich durch seinen starken Kontrast und dunklen Rahmen selbst in dunklen Schluchten und Hoehlen sofort ab.
-* **100 % Fair (Kein X-Ray / Wallhack):**
-  Die Mod veraendert ausschliesslich sichtbare Texturen von Bloecken. Es werden keine verdeckten Bloecke durch Steinwaende hindurch gerendert. Voellig legitim auf Multiplayer-Servern.
-* **Mod Menu & Konfigurationsmenue:**
-  Vollstaendige Unterstuetzung fuer Mod Menu. Du kannst die Konfiguration direkt in den Einstellungen oder im Chat oeffnen:
-  * `/hb gui` oder `/hb config` - Oeffnet das Einstellungsmenue
-  * `/hb list` - Zeigt alle aktuell hervorgehobenen Bloecke an
-  * `/hb clear` - Setzt alle Auswahlen zurueck
-* **Out-of-the-Box:**
-  Einfach in den `mods`-Ordner legen. Keine manuelle Texturepack-Einrichtung notwendig.
-
----
-
-### Steuerung & Tastaturkuerzel
-* **H**: Block anvisieren und Textur umschalten (Ausrufezeichen an/aus)
-
-*(Die Taste kann im normalen Minecraft-Steuerungsmenue unter Optionen -> Steuerung -> Tastenbelegung -> "Highlight Block" beliebig angepasst werden).*
+* **Target & Toggle Hotkey (H):**
+  Look at any block you want to spot (e.g. Andesite, Deepslate Diamond Ore, Ancient Debris) and press **H**. The texture dynamically swaps to a high-contrast yellow exclamation mark. Pressing **H** again immediately restores its original appearance.
+* **Zero Performance Impact & Unlimited Render Distance:**
+  Unlike shader-based outlines or heavy entity renderers that cause frame drops beyond 32 blocks, Highlight Block manages a seamless dynamic texture system. Enjoy full framerates even at high render distances with Sodium, Iris, and Distant Horizons.
+* **High Contrast & Cave Visibility:**
+  Engineered with high-contrast neon and gold yellow on a deep dark border, the marker clearly stands out even in pitch-black caves and deep ravines.
+* **100% Fair Play (No X-Ray / Wallhacks):**
+  Only visible block faces are highlighted. Hidden blocks behind solid stone are never revealed, making it fully legitimate for fair multiplayer gameplay.
+* **Mod Menu Integration & Commands:**
+  Includes a built-in config screen compatible with Mod Menu, as well as dedicated chat commands:
+  * `/hb gui` or `/hb config` - Opens the in-game settings screen
+  * `/hb list` - Lists all currently highlighted blocks
+  * `/hb clear` - Clears all active block selections
+* **Out-of-the-Box Setup:**
+  No manual folder creation, zip extraction, or resourcepack menu tinkering required. Simply place the `.jar` into your `mods` folder.
 
 ---
 
-### Voraussetzungen
+### Controls
+* **H**: Toggle highlight texture on the targeted block
+
+*(The keybinding can be customized in Options -> Controls -> Key Binds under "Highlight Block").*
+
+---
+
+### Requirements
 * Minecraft Fabric 26.2+
 * Fabric Loader 0.16.0+
 * Fabric API
@@ -39,5 +39,5 @@ Highlight Block ist eine hochperformante, faire und unkomplizierte Client-Side-M
 
 ---
 
-### Lizenz
+### License
 MIT License (c) 2026 peakreap1

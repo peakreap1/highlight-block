@@ -13,7 +13,7 @@ public class HighlightConfigScreen extends Screen {
     private final Screen parent;
 
     public HighlightConfigScreen(Screen parent) {
-        super(Component.literal("Highlight Block - Texturepack"));
+        super(Component.literal("Highlight Block - Settings"));
         this.parent = parent;
     }
 
@@ -30,10 +30,10 @@ public class HighlightConfigScreen extends Screen {
         int selectedCount = manager.getHighlightedBlockIds().size();
         addRenderableWidget(
                 Button.builder(
-                                Component.literal("Auswahl leeren (" + selectedCount + " aktiv)"),
+                                Component.literal("Clear Selection (" + selectedCount + " active)"),
                                 btn -> {
                                     manager.clearBlocks(this.minecraft);
-                                    btn.setMessage(Component.literal("Auswahl geleert (0 aktiv)"));
+                                    btn.setMessage(Component.literal("Selection Cleared (0 active)"));
                                 }
                         )
                         .bounds(centerX, 45, buttonWidth, buttonHeight)
@@ -62,15 +62,15 @@ public class HighlightConfigScreen extends Screen {
         Set<String> blocks = manager.getHighlightedBlockIds();
 
         int y = 78;
-        extractor.centeredText(this.font, Component.literal("Aktive Blöcke mit gelbem Ausrufezeichen (!):"), this.width / 2, y, 0xFFFFFFFF);
+        extractor.centeredText(this.font, Component.literal("Active Blocks with Spotlight Texture (!):"), this.width / 2, y, 0xFFFFFFFF);
         y += 16;
 
         if (blocks.isEmpty()) {
-            extractor.centeredText(this.font, Component.literal("(Keine Blöcke ausgewählt)"), this.width / 2, y, 0xFF888888);
+            extractor.centeredText(this.font, Component.literal("(No blocks selected)"), this.width / 2, y, 0xFF888888);
         } else {
             for (String id : blocks) {
                 if (y > this.height - 65) {
-                    extractor.centeredText(this.font, Component.literal("... und weitere"), this.width / 2, y, 0xFFAAAAAA);
+                    extractor.centeredText(this.font, Component.literal("... and more"), this.width / 2, y, 0xFFAAAAAA);
                     break;
                 }
                 extractor.centeredText(this.font, Component.literal("• " + id), this.width / 2, y, 0xFFFFEE55);
@@ -80,7 +80,7 @@ public class HighlightConfigScreen extends Screen {
 
         extractor.centeredText(
                 this.font,
-                Component.literal("Tipp: Visiere einen Block an und drücke 'H', um ihn auszuwählen / zu entfernen!"),
+                Component.literal("Tip: Aim at any block and press 'H' to spotlight or reset it!"),
                 this.width / 2,
                 this.height - 48,
                 0xFFAAAAAA
