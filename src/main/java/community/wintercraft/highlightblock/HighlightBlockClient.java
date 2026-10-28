@@ -1,13 +1,10 @@
 package community.wintercraft.highlightblock;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.context.CommandContext;
 import community.wintercraft.highlightblock.gui.HighlightConfigScreen;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
-import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.ChatFormatting;
@@ -51,9 +48,6 @@ public class HighlightBlockClient implements ClientModInitializer {
                 category
         ));
 
-        // Initialize Level Outline Renderer
-        HighlightRenderer.init();
-
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null || client.level == null) return;
 
@@ -64,8 +58,6 @@ public class HighlightBlockClient implements ClientModInitializer {
             while (keyToggleAll.consumeClick()) {
                 handleToggleAll(client);
             }
-
-            HighlightRenderer.clientTick(client);
         });
 
         registerCommands();
@@ -80,12 +72,12 @@ public class HighlightBlockClient implements ClientModInitializer {
             Identifier id = BuiltInRegistries.BLOCK.getKey(block);
 
             if (id != null) {
-                boolean active = HighlightManager.getInstance().toggleBlock(block);
+                boolean active = HighlightManager.getInstance().toggleBlock(block, client);
                 Component msg = Component.literal("[Highlight Block] ")
                         .withStyle(ChatFormatting.GOLD)
                         .append(Component.literal(block.getName().getString()).withStyle(ChatFormatting.WHITE))
-                        .append(Component.literal(active ? " [Hervorgehoben!]" : " [Entfernt]")
-                                .withStyle(active ? ChatFormatting.GREEN : ChatFormatting.GRAY));
+                        .append(Component.literal(active ? " [Gelbes '!' Textur AKTIV]" : " [Textur ENTFERNT]")
+                                .withStyle(active ? ChatFormatting.YELLOW : ChatFormatting.GRAY));
                 client.player.sendSystemMessage(msg);
             }
         } else {
@@ -95,18 +87,12 @@ public class HighlightBlockClient implements ClientModInitializer {
     }
 
     private void handleToggleAll(Minecraft client) {
-        boolean enabled = HighlightManager.getInstance().toggleEnabled();
-        Component msg = Component.literal("[Highlight Block] Leucht-Umrandungen sind jetzt ")
-                .withStyle(ChatFormatting.LIGHT_PURPLE)
+        boolean enabled = HighlightManager.getInstance().toggleEnabled(client);
+        Component msg = Component.literal("[Highlight Block] Texturepack ist jetzt ")
+                .withStyle(ChatFormatting.GOLD)
                 .append(Component.literal(enabled ? "AKTIVIERT" : "DEAKTIVIERT")
                         .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.RED));
         client.player.sendSystemMessage(msg);
-    }
-
-    private static int setDistance(CommandContext<FabricClientCommandSource> context, int dist) {
-        HighlightManager.getInstance().setRenderDistance(dist);
-        context.getSource().sendFeedback(Component.literal("[Highlight Block] Reichweite auf " + dist + " Blöcke gesetzt!").withStyle(ChatFormatting.LIGHT_PURPLE));
-        return 1;
     }
 
     private void registerCommands() {
@@ -126,14 +112,16 @@ public class HighlightBlockClient implements ClientModInitializer {
                             }))
                     .then(ClientCommands.literal("toggle")
                             .executes(context -> {
-                                boolean en = HighlightManager.getInstance().toggleEnabled();
-                                context.getSource().sendFeedback(Component.literal("[Highlight Block] Aktiv: " + en).withStyle(ChatFormatting.LIGHT_PURPLE));
+                                Minecraft client = Minecraft.getInstance();
+                                boolean en = HighlightManager.getInstance().toggleEnabled(client);
+                                context.getSource().sendFeedback(Component.literal("[Highlight Block] Texturepack Aktiv: " + en).withStyle(ChatFormatting.GOLD));
                                 return 1;
                             }))
                     .then(ClientCommands.literal("clear")
                             .executes(context -> {
-                                HighlightManager.getInstance().clearBlocks();
-                                context.getSource().sendFeedback(Component.literal("[Highlight Block] Alle Block-Umrandungen entfernt.").withStyle(ChatFormatting.LIGHT_PURPLE));
+                                Minecraft client = Minecraft.getInstance();
+                                HighlightManager.getInstance().clearBlocks(client);
+                                context.getSource().sendFeedback(Component.literal("[Highlight Block] Alle Block-Auswahlen gelöscht.").withStyle(ChatFormatting.GOLD));
                                 return 1;
                             }))
                     .then(ClientCommands.literal("list")
@@ -142,135 +130,15 @@ public class HighlightBlockClient implements ClientModInitializer {
                                 if (list.isEmpty()) {
                                     context.getSource().sendFeedback(Component.literal("[Highlight Block] Keine Blöcke ausgewählt.").withStyle(ChatFormatting.GRAY));
                                 } else {
-                                    context.getSource().sendFeedback(Component.literal("[Highlight Block] Aktive Blöcke:").withStyle(ChatFormatting.LIGHT_PURPLE));
+                                    context.getSource().sendFeedback(Component.literal("[Highlight Block] Aktive Blöcke:").withStyle(ChatFormatting.GOLD));
                                     for (String b : list) {
                                         context.getSource().sendFeedback(Component.literal(" - " + b).withStyle(ChatFormatting.WHITE));
                                     }
                                 }
                                 return 1;
                             }))
-                    .then(ClientCommands.literal("texture")
-                            .then(ClientCommands.literal("on")
-                                    .executes(context -> {
-                                        HighlightManager.getInstance().setTextureSwapEnabled(true);
-                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Gelbes '!' Textur: AKTIVIERT").withStyle(ChatFormatting.GOLD));
-                                        return 1;
-                                    }))
-                            .then(ClientCommands.literal("off")
-                                    .executes(context -> {
-                                        HighlightManager.getInstance().setTextureSwapEnabled(false);
-                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Gelbes '!' Textur: DEAKTIVIERT").withStyle(ChatFormatting.GRAY));
-                                        return 1;
-                                    }))
-                    )
-                    .then(ClientCommands.literal("outline")
-                            .then(ClientCommands.literal("on")
-                                    .executes(context -> {
-                                        HighlightManager.getInstance().setOutlineEnabled(true);
-                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Animierte Outline: AKTIVIERT").withStyle(ChatFormatting.LIGHT_PURPLE));
-                                        return 1;
-                                    }))
-                            .then(ClientCommands.literal("off")
-                                    .executes(context -> {
-                                        HighlightManager.getInstance().setOutlineEnabled(false);
-                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Animierte Outline: DEAKTIVIERT").withStyle(ChatFormatting.GRAY));
-                                        return 1;
-                                    }))
-                    )
-                    .then(ClientCommands.literal("distance")
-                            .executes(context -> {
-                                int dist = HighlightManager.getInstance().getRenderDistance();
-                                context.getSource().sendFeedback(Component.literal("[Highlight Block] Aktuelle Reichweite: " + dist + " Blöcke. (/hb distance <16-96>)").withStyle(ChatFormatting.LIGHT_PURPLE));
-                                return 1;
-                            })
-                            .then(ClientCommands.argument("blocks", IntegerArgumentType.integer(16, 96))
-                                    .executes(context -> {
-                                        int dist = IntegerArgumentType.getInteger(context, "blocks");
-                                        HighlightManager.getInstance().setRenderDistance(dist);
-                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Reichweite auf " + dist + " Blöcke gesetzt!").withStyle(ChatFormatting.LIGHT_PURPLE));
-                                        return 1;
-                                    }))
-                            .then(ClientCommands.literal("24").executes(context -> setDistance(context, 24)))
-                            .then(ClientCommands.literal("36").executes(context -> setDistance(context, 36)))
-                            .then(ClientCommands.literal("48").executes(context -> setDistance(context, 48)))
-                            .then(ClientCommands.literal("64").executes(context -> setDistance(context, 64)))
-                            .then(ClientCommands.literal("80").executes(context -> setDistance(context, 80)))
-                            .then(ClientCommands.literal("96").executes(context -> setDistance(context, 96)))
-                    )
-                    .then(ClientCommands.literal("mode")
-                            .executes(context -> {
-                                HighlightManager.AnimationMode current = HighlightManager.getInstance().getAnimationMode();
-                                context.getSource().sendFeedback(Component.literal("[Highlight Block] Aktueller Modus: " + current.name() + " (/hb mode <neon|rainbow|cyan|gold|static>)").withStyle(ChatFormatting.LIGHT_PURPLE));
-                                return 1;
-                            })
-                            .then(ClientCommands.literal("neon")
-                                    .executes(context -> {
-                                        HighlightManager.getInstance().setAnimationMode(HighlightManager.AnimationMode.NEON_PURPLE);
-                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Modus gewechselt: Neon Lila (Pulsierend)").withStyle(ChatFormatting.LIGHT_PURPLE));
-                                        return 1;
-                                    }))
-                            .then(ClientCommands.literal("rainbow")
-                                    .executes(context -> {
-                                        HighlightManager.getInstance().setAnimationMode(HighlightManager.AnimationMode.RAINBOW);
-                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Modus gewechselt: Rainbow Chroma Wave").withStyle(ChatFormatting.AQUA));
-                                        return 1;
-                                    }))
-                            .then(ClientCommands.literal("cyan")
-                                    .executes(context -> {
-                                        HighlightManager.getInstance().setAnimationMode(HighlightManager.AnimationMode.ELECTRIC_CYAN);
-                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Modus gewechselt: Cyberpunk Cyan").withStyle(ChatFormatting.DARK_AQUA));
-                                        return 1;
-                                    }))
-                            .then(ClientCommands.literal("gold")
-                                    .executes(context -> {
-                                        HighlightManager.getInstance().setAnimationMode(HighlightManager.AnimationMode.AMBER_GOLD);
-                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Modus gewechselt: Golden Ore Glow").withStyle(ChatFormatting.GOLD));
-                                        return 1;
-                                    }))
-                            .then(ClientCommands.literal("static")
-                                    .executes(context -> {
-                                        HighlightManager.getInstance().setAnimationMode(HighlightManager.AnimationMode.STATIC);
-                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Modus gewechselt: Statisch").withStyle(ChatFormatting.WHITE));
-                                        return 1;
-                                    }))
-                    )
-                    .then(ClientCommands.literal("speed")
-                            .then(ClientCommands.literal("slow")
-                                    .executes(context -> {
-                                        HighlightManager.getInstance().setAnimationSpeed(0.5f);
-                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Geschwindigkeit: Langsam (0.5x)").withStyle(ChatFormatting.LIGHT_PURPLE));
-                                        return 1;
-                                    }))
-                            .then(ClientCommands.literal("normal")
-                                    .executes(context -> {
-                                        HighlightManager.getInstance().setAnimationSpeed(1.0f);
-                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Geschwindigkeit: Normal (1.0x)").withStyle(ChatFormatting.LIGHT_PURPLE));
-                                        return 1;
-                                    }))
-                            .then(ClientCommands.literal("fast")
-                                    .executes(context -> {
-                                        HighlightManager.getInstance().setAnimationSpeed(2.0f);
-                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Geschwindigkeit: Schnell (2.0x)").withStyle(ChatFormatting.LIGHT_PURPLE));
-                                        return 1;
-                                    }))
-                    )
-                    .then(ClientCommands.literal("halo")
-                            .then(ClientCommands.literal("on")
-                                    .executes(context -> {
-                                        HighlightManager.getInstance().setHaloEnabled(true);
-                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Leucht-Aura (Halo): AKTIVIERT").withStyle(ChatFormatting.LIGHT_PURPLE));
-                                        return 1;
-                                    }))
-                            .then(ClientCommands.literal("off")
-                                    .executes(context -> {
-                                        HighlightManager.getInstance().setHaloEnabled(false);
-                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Leucht-Aura (Halo): DEAKTIVIERT").withStyle(ChatFormatting.GRAY));
-                                        return 1;
-                                    }))
-                    )
             );
 
-            // Shortcut /hb
             dispatcher.register(ClientCommands.literal("hb")
                     .redirect(dispatcher.getRoot().getChild("highlightblock"))
             );

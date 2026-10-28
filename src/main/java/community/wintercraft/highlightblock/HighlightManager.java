@@ -4,51 +4,47 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.block.BlockStateModelSet;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
+import net.minecraft.client.resources.model.geometry.BakedQuad;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.packs.repository.PackRepository;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 public class HighlightManager {
-    public static final int TINT_INDEX = 9999;
+    public static final String PACK_FOLDER_NAME = "Highlight Block";
+    public static final String PACK_ID = "file/" + PACK_FOLDER_NAME;
+
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final HighlightManager INSTANCE = new HighlightManager();
 
-    public enum AnimationMode {
-        NEON_PURPLE,
-        RAINBOW,
-        ELECTRIC_CYAN,
-        AMBER_GOLD,
-        STATIC
-    }
-
     private boolean enabled = true;
-    private boolean outlineEnabled = true;
-    private boolean textureSwapEnabled = true; // Yellow exclamation mark texture swap
-    private boolean blockTintEnabled = false;
-    private boolean fullbright = false;
-    private boolean seeThrough = false; // No X-Ray: strictly occluded by walls
-    private boolean haloEnabled = true;
-
-    private AnimationMode animationMode = AnimationMode.NEON_PURPLE;
-    private float animationSpeed = 1.0f;
-    private float outlineWidth = 2.2f;
-    private float haloWidth = 5.2f;
-    private int outlineColor = 0xFFD000FF; // Vibrant electric purple
-    private int highlightColor = 0xFFEE00;
-
-    // Render & scan distance settings (in blocks)
-    private int renderDistance = 64; // Default 64 blocks (previously was only 24)
-    private int verticalDistance = 32; // Default 32 blocks up/down
-
-    private final Set<String> highlightedBlockIds = new HashSet<>();
-    private final HighlightTintSource tintSource = new HighlightTintSource();
+    private final Set<String> highlightedBlockIds = new LinkedHashSet<>();
+    private static byte[] exclamationBytesCache = null;
 
     private HighlightManager() {
         // Default highlighted block: Andesite
@@ -64,168 +60,29 @@ public class HighlightManager {
         return enabled;
     }
 
-    public void setEnabled(boolean enabled) {
+    public void setEnabled(boolean enabled, Minecraft mc) {
         this.enabled = enabled;
         save();
-        refreshWorld();
+        if (mc != null) {
+            applyTexturePack(mc);
+        }
     }
 
-    public boolean toggleEnabled() {
-        setEnabled(!this.enabled);
+    public boolean toggleEnabled(Minecraft mc) {
+        this.enabled = !this.enabled;
+        save();
+        if (mc != null) {
+            applyTexturePack(mc);
+        }
         return this.enabled;
     }
 
-    public boolean isOutlineEnabled() {
-        return outlineEnabled;
-    }
-
-    public void setOutlineEnabled(boolean outlineEnabled) {
-        this.outlineEnabled = outlineEnabled;
-        save();
-    }
-
-    public boolean isTextureSwapEnabled() {
-        return textureSwapEnabled;
-    }
-
-    public void setTextureSwapEnabled(boolean textureSwapEnabled) {
-        this.textureSwapEnabled = textureSwapEnabled;
-        save();
-        refreshWorld();
-    }
-
-    public boolean isBlockTintEnabled() {
-        return blockTintEnabled;
-    }
-
-    public void setBlockTintEnabled(boolean blockTintEnabled) {
-        this.blockTintEnabled = blockTintEnabled;
-        save();
-        refreshWorld();
-    }
-
-    public boolean isFullbright() {
-        return fullbright;
-    }
-
-    public void setFullbright(boolean fullbright) {
-        this.fullbright = fullbright;
-        save();
-        refreshWorld();
-    }
-
-    public boolean isSeeThrough() {
-        return seeThrough;
-    }
-
-    public void setSeeThrough(boolean seeThrough) {
-        this.seeThrough = seeThrough;
-        save();
-    }
-
-    public boolean isHaloEnabled() {
-        return haloEnabled;
-    }
-
-    public void setHaloEnabled(boolean haloEnabled) {
-        this.haloEnabled = haloEnabled;
-        save();
-    }
-
-    public AnimationMode getAnimationMode() {
-        return animationMode;
-    }
-
-    public void setAnimationMode(AnimationMode animationMode) {
-        this.animationMode = animationMode;
-        save();
-    }
-
-    public float getAnimationSpeed() {
-        return animationSpeed;
-    }
-
-    public void setAnimationSpeed(float animationSpeed) {
-        this.animationSpeed = Math.max(0.1f, Math.min(5.0f, animationSpeed));
-        save();
-    }
-
-    public float getOutlineWidth() {
-        return outlineWidth;
-    }
-
-    public void setOutlineWidth(float outlineWidth) {
-        this.outlineWidth = Math.max(0.5f, Math.min(10.0f, outlineWidth));
-        save();
-    }
-
-    public float getHaloWidth() {
-        return haloWidth;
-    }
-
-    public void setHaloWidth(float haloWidth) {
-        this.haloWidth = Math.max(1.0f, Math.min(15.0f, haloWidth));
-        save();
-    }
-
-    public int getRenderDistance() {
-        return renderDistance;
-    }
-
-    public void setRenderDistance(int renderDistance) {
-        this.renderDistance = Math.max(16, Math.min(96, renderDistance));
-        save();
-    }
-
-    public int getVerticalDistance() {
-        return verticalDistance;
-    }
-
-    public void setVerticalDistance(int verticalDistance) {
-        this.verticalDistance = Math.max(8, Math.min(128, verticalDistance));
-        save();
-    }
-
-    public int getOutlineColor() {
-        return outlineColor;
-    }
-
-    public void setOutlineColor(int outlineColor) {
-        this.outlineColor = outlineColor;
-        save();
-    }
-
-    public int getHighlightColor() {
-        return highlightColor;
-    }
-
-    public void setHighlightColor(int color) {
-        this.highlightColor = color;
-        save();
-        refreshWorld();
-    }
-
-    public HighlightTintSource getTintSource() {
-        return tintSource;
-    }
-
     public boolean isHighlighted(Block block) {
-        if (!enabled) return false;
         Identifier id = BuiltInRegistries.BLOCK.getKey(block);
         return id != null && highlightedBlockIds.contains(id.toString());
     }
 
-    public boolean isHighlightedForTint(Block block) {
-        return blockTintEnabled && isHighlighted(block);
-    }
-
-    public boolean isHighlightedForModel(Block block) {
-        if (!enabled) return false;
-        if (!isHighlighted(block)) return false;
-        return textureSwapEnabled || blockTintEnabled || fullbright;
-    }
-
-    public boolean toggleBlock(Block block) {
+    public boolean toggleBlock(Block block, Minecraft mc) {
         Identifier id = BuiltInRegistries.BLOCK.getKey(block);
         if (id == null) return false;
         String idStr = id.toString();
@@ -238,51 +95,186 @@ public class HighlightManager {
             activeNow = true;
         }
         save();
-        refreshWorld();
+        if (mc != null) {
+            applyTexturePack(mc);
+        }
         return activeNow;
     }
 
-    public void addBlock(Block block) {
-        Identifier id = BuiltInRegistries.BLOCK.getKey(block);
-        if (id != null) {
-            highlightedBlockIds.add(id.toString());
-            save();
-            refreshWorld();
-        }
-    }
-
-    public void removeBlock(Block block) {
-        Identifier id = BuiltInRegistries.BLOCK.getKey(block);
-        if (id != null) {
-            highlightedBlockIds.remove(id.toString());
-            save();
-            refreshWorld();
-        }
-    }
-
-    public void clearBlocks() {
+    public void clearBlocks(Minecraft mc) {
         highlightedBlockIds.clear();
         save();
-        refreshWorld();
+        if (mc != null) {
+            applyTexturePack(mc);
+        }
     }
 
     public Set<String> getHighlightedBlockIds() {
-        return new HashSet<>(highlightedBlockIds);
+        return Collections.unmodifiableSet(highlightedBlockIds);
     }
 
-    public void refreshWorld() {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null) return;
+    public static byte[] getExclamationMarkBytes() {
+        if (exclamationBytesCache != null) {
+            return exclamationBytesCache;
+        }
+        try (InputStream in = HighlightManager.class.getResourceAsStream("/assets/highlightblock/textures/block/exclamation_mark.png")) {
+            if (in != null) {
+                exclamationBytesCache = in.readAllBytes();
+                return exclamationBytesCache;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static Set<String> getTexturePathsForBlock(Minecraft mc, Block block) {
+        Set<String> list = new LinkedHashSet<>();
+        Identifier blockId = BuiltInRegistries.BLOCK.getKey(block);
+        if (blockId == null) return list;
+
+        String ns = blockId.getNamespace();
+        String path = blockId.getPath();
+
+        // Extract textures from the live block model quads
+        try {
+            BlockState defaultState = block.defaultBlockState();
+            if (mc != null && mc.getModelManager() != null) {
+                BlockStateModelSet modelSet = mc.getModelManager().getBlockStateModelSet();
+                if (modelSet != null) {
+                    BlockStateModel model = modelSet.get(defaultState);
+                    if (model != null) {
+                        List<BlockStateModelPart> parts = new ArrayList<>();
+                        model.collectParts(RandomSource.create(42L), parts);
+                        for (BlockStateModelPart part : parts) {
+                            for (Direction dir : Direction.values()) {
+                                List<BakedQuad> quads = part.getQuads(dir);
+                                if (quads != null) {
+                                    for (BakedQuad q : quads) {
+                                        Identifier tex = q.materialInfo().sprite().contents().name();
+                                        list.add("assets/" + tex.getNamespace() + "/textures/" + tex.getPath() + ".png");
+                                    }
+                                }
+                            }
+                            List<BakedQuad> unculled = part.getQuads(null);
+                            if (unculled != null) {
+                                for (BakedQuad q : unculled) {
+                                    Identifier tex = q.materialInfo().sprite().contents().name();
+                                    list.add("assets/" + tex.getNamespace() + "/textures/" + tex.getPath() + ".png");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
+
+        // Guaranteed standard fallbacks for any block
+        list.add("assets/" + ns + "/textures/block/" + path + ".png");
+        list.add("assets/" + ns + "/textures/block/" + path + "_side.png");
+        list.add("assets/" + ns + "/textures/block/" + path + "_top.png");
+        list.add("assets/" + ns + "/textures/block/" + path + "_bottom.png");
+        return list;
+    }
+
+    public void applyTexturePack(Minecraft mc) {
         mc.execute(() -> {
-            if (mc.levelRenderer != null && mc.level != null && mc.gameRenderer != null) {
-                mc.levelRenderer.invalidateCompiledGeometry(
-                        mc.level,
-                        mc.options,
-                        mc.gameRenderer.mainCamera(),
-                        mc.getBlockColors()
-                );
+            try {
+                Path resourcePackDir = mc.getResourcePackDirectory();
+                if (resourcePackDir == null) return;
+
+                Path packDir = resourcePackDir.resolve(PACK_FOLDER_NAME);
+                Files.createDirectories(packDir);
+
+                // Write pack.mcmeta
+                Path mcmeta = packDir.resolve("pack.mcmeta");
+                String metaContent = "{\n  \"pack\": {\n    \"pack_format\": 88,\n    \"min_format\": 84,\n    \"max_format\": 100,\n    \"description\": \"§e§lHighlight Block §7[26.2]\\n§6Dynamisches Block-Finder Texturepack (!)\"\n  }\n}";
+                Files.writeString(mcmeta, metaContent, StandardCharsets.UTF_8);
+
+                // Write pack.png
+                byte[] exclamationBytes = getExclamationMarkBytes();
+                Path packPng = packDir.resolve("pack.png");
+                if (!Files.exists(packPng) && exclamationBytes != null) {
+                    Files.write(packPng, exclamationBytes);
+                }
+
+                // Clean existing textures
+                Path assetsDir = packDir.resolve("assets");
+                if (Files.exists(assetsDir)) {
+                    deleteDirectoryRecursively(assetsDir);
+                }
+
+                // If enabled and has selected blocks, generate the exclamation mark textures
+                boolean shouldBeActive = enabled && !highlightedBlockIds.isEmpty();
+                if (shouldBeActive && exclamationBytes != null) {
+                    for (String idStr : highlightedBlockIds) {
+                        Identifier id = Identifier.tryParse(idStr);
+                        if (id != null) {
+                            Block block = BuiltInRegistries.BLOCK.getValue(id);
+                            if (block != null && block != Blocks.AIR) {
+                                Set<String> relPaths = getTexturePathsForBlock(mc, block);
+                                for (String relPath : relPaths) {
+                                    Path targetFile = packDir.resolve(relPath);
+                                    Files.createDirectories(targetFile.getParent());
+                                    Files.write(targetFile, exclamationBytes);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Synchronize pack selection in Minecraft
+                PackRepository repo = mc.getResourcePackRepository();
+                repo.reload();
+
+                List<String> selected = new ArrayList<>(repo.getSelectedIds());
+                boolean changed = false;
+
+                if (shouldBeActive) {
+                    if (!selected.contains(PACK_ID)) {
+                        selected.add(PACK_ID);
+                        changed = true;
+                    }
+                } else {
+                    if (selected.contains(PACK_ID)) {
+                        selected.remove(PACK_ID);
+                        changed = true;
+                    }
+                }
+
+                if (changed) {
+                    repo.setSelected(selected);
+                    mc.options.updateResourcePacks(repo);
+                    mc.options.save();
+                }
+
+                // Trigger resource reload (rebuilds atlas with the yellow exclamation mark)
+                mc.reloadResourcePacks();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         });
+    }
+
+    private static void deleteDirectoryRecursively(Path path) {
+        try {
+            if (!Files.exists(path)) return;
+            Files.walkFileTree(path, new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    Files.delete(file);
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    Files.delete(dir);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private File getConfigFile() {
@@ -298,21 +290,7 @@ public class HighlightManager {
             }
             ConfigData data = new ConfigData();
             data.enabled = this.enabled;
-            data.outlineEnabled = this.outlineEnabled;
-            data.textureSwapEnabled = this.textureSwapEnabled;
-            data.blockTintEnabled = this.blockTintEnabled;
-            data.fullbright = this.fullbright;
-            data.seeThrough = this.seeThrough;
-            data.haloEnabled = this.haloEnabled;
-            data.animationMode = this.animationMode != null ? this.animationMode.name() : "NEON_PURPLE";
-            data.animationSpeed = this.animationSpeed;
-            data.outlineColor = this.outlineColor;
-            data.outlineWidth = this.outlineWidth;
-            data.haloWidth = this.haloWidth;
-            data.renderDistance = this.renderDistance;
-            data.verticalDistance = this.verticalDistance;
-            data.highlightColor = this.highlightColor;
-            data.highlightedBlocks = this.highlightedBlockIds;
+            data.highlightedBlocks = new HashSet<>(this.highlightedBlockIds);
             try (FileWriter writer = new FileWriter(file)) {
                 GSON.toJson(data, writer);
             }
@@ -329,26 +307,6 @@ public class HighlightManager {
                     ConfigData data = GSON.fromJson(reader, ConfigData.class);
                     if (data != null) {
                         this.enabled = data.enabled;
-                        this.outlineEnabled = data.outlineEnabled;
-                        this.textureSwapEnabled = data.textureSwapEnabled;
-                        this.blockTintEnabled = data.blockTintEnabled;
-                        this.fullbright = data.fullbright;
-                        this.seeThrough = data.seeThrough;
-                        this.haloEnabled = data.haloEnabled;
-                        if (data.animationMode != null) {
-                            try {
-                                this.animationMode = AnimationMode.valueOf(data.animationMode.toUpperCase());
-                            } catch (Exception ignored) {
-                                this.animationMode = AnimationMode.NEON_PURPLE;
-                            }
-                        }
-                        this.animationSpeed = data.animationSpeed > 0 ? data.animationSpeed : 1.0f;
-                        this.outlineColor = data.outlineColor != 0 ? data.outlineColor : 0xFFD000FF;
-                        this.outlineWidth = data.outlineWidth > 0 ? data.outlineWidth : 2.2f;
-                        this.haloWidth = data.haloWidth > 0 ? data.haloWidth : 5.2f;
-                        this.renderDistance = data.renderDistance >= 16 ? data.renderDistance : 64;
-                        this.verticalDistance = data.verticalDistance >= 8 ? data.verticalDistance : 32;
-                        this.highlightColor = data.highlightColor != 0 ? data.highlightColor : 0xFFEE00;
                         if (data.highlightedBlocks != null) {
                             this.highlightedBlockIds.clear();
                             this.highlightedBlockIds.addAll(data.highlightedBlocks);
@@ -363,20 +321,6 @@ public class HighlightManager {
 
     private static class ConfigData {
         boolean enabled = true;
-        boolean outlineEnabled = true;
-        boolean textureSwapEnabled = true;
-        boolean blockTintEnabled = false;
-        boolean fullbright = false;
-        boolean seeThrough = false;
-        boolean haloEnabled = true;
-        String animationMode = "NEON_PURPLE";
-        float animationSpeed = 1.0f;
-        int outlineColor = 0xFFD000FF;
-        float outlineWidth = 2.2f;
-        float haloWidth = 5.2f;
-        int renderDistance = 64;
-        int verticalDistance = 32;
-        int highlightColor = 0xFFEE00;
         Set<String> highlightedBlocks = new HashSet<>();
     }
 }

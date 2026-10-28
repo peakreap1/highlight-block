@@ -8,13 +8,13 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
-import java.util.List;
+import java.util.Set;
 
 public class HighlightConfigScreen extends Screen {
     private final Screen parent;
 
     public HighlightConfigScreen(Screen parent) {
-        super(Component.literal("Highlight Block - Einstellungen"));
+        super(Component.literal("Highlight Block - Texturepack"));
         this.parent = parent;
     }
 
@@ -23,133 +23,41 @@ public class HighlightConfigScreen extends Screen {
         clearWidgets();
         HighlightManager manager = HighlightManager.getInstance();
 
-        int buttonWidth = 155;
+        int buttonWidth = 200;
         int buttonHeight = 20;
-        int leftX = this.width / 2 - buttonWidth - 5;
-        int rightX = this.width / 2 + 5;
+        int centerX = this.width / 2 - buttonWidth / 2;
 
-        int startY = 36;
-        int rowSpacing = 24;
+        int startY = 45;
+        int spacing = 26;
 
-        // Row 0: Master Enabled & Animation Mode
+        // Button 1: Texturepack On/Off
         addRenderableWidget(
                 CycleButton.onOffBuilder(manager.isEnabled())
                         .create(
-                                leftX, startY, buttonWidth, buttonHeight,
-                                Component.literal("Highlight Mod"),
-                                (button, value) -> manager.setEnabled(value)
+                                centerX, startY, buttonWidth, buttonHeight,
+                                Component.literal("Texturepack"),
+                                (button, value) -> manager.setEnabled(value, this.minecraft)
                         )
         );
 
-        addRenderableWidget(
-                CycleButton.builder(
-                                (HighlightManager.AnimationMode mode) -> switch (mode) {
-                                    case NEON_PURPLE -> Component.literal("Neon Lila (Puls)");
-                                    case RAINBOW -> Component.literal("Rainbow Wave");
-                                    case ELECTRIC_CYAN -> Component.literal("Cyberpunk Cyan");
-                                    case AMBER_GOLD -> Component.literal("Golden Ore");
-                                    case STATIC -> Component.literal("Statisch");
-                                },
-                                manager.getAnimationMode()
-                        )
-                        .withValues(HighlightManager.AnimationMode.values())
-                        .create(
-                                rightX, startY, buttonWidth, buttonHeight,
-                                Component.literal("Outline Stil"),
-                                (button, value) -> manager.setAnimationMode(value)
-                        )
-        );
-
-        // Row 1: Texture Swap (Yellow '!') & Animated Outline
-        addRenderableWidget(
-                CycleButton.onOffBuilder(manager.isTextureSwapEnabled())
-                        .create(
-                                leftX, startY + rowSpacing, buttonWidth, buttonHeight,
-                                Component.literal("Gelbes '!' Textur"),
-                                (button, value) -> manager.setTextureSwapEnabled(value)
-                        )
-        );
-
-        addRenderableWidget(
-                CycleButton.onOffBuilder(manager.isOutlineEnabled())
-                        .create(
-                                rightX, startY + rowSpacing, buttonWidth, buttonHeight,
-                                Component.literal("Animierte Outline"),
-                                (button, value) -> manager.setOutlineEnabled(value)
-                        )
-        );
-
-        // Row 2: Render Distance & Animation Speed
-        List<Integer> distances = List.of(24, 36, 48, 64, 80, 96);
-        addRenderableWidget(
-                CycleButton.builder(
-                                (Integer dist) -> Component.literal(dist + " Blöcke"),
-                                closestDistance(manager.getRenderDistance(), distances)
-                        )
-                        .withValues(distances)
-                        .create(
-                                leftX, startY + rowSpacing * 2, buttonWidth, buttonHeight,
-                                Component.literal("Outline Reichweite"),
-                                (button, value) -> manager.setRenderDistance(value)
-                        )
-        );
-
-        List<Float> speeds = List.of(0.5f, 1.0f, 2.0f);
-        addRenderableWidget(
-                CycleButton.builder(
-                                (Float spd) -> spd == 0.5f ? Component.literal("Langsam (0.5x)") : (spd == 2.0f ? Component.literal("Schnell (2.0x)") : Component.literal("Normal (1.0x)")),
-                                manager.getAnimationSpeed()
-                        )
-                        .withValues(speeds)
-                        .create(
-                                rightX, startY + rowSpacing * 2, buttonWidth, buttonHeight,
-                                Component.literal("Animations-Tempo"),
-                                (button, value) -> manager.setAnimationSpeed(value)
-                        )
-        );
-
-        // Row 3: Halo Bloom & Outline Width
-        addRenderableWidget(
-                CycleButton.onOffBuilder(manager.isHaloEnabled())
-                        .create(
-                                leftX, startY + rowSpacing * 3, buttonWidth, buttonHeight,
-                                Component.literal("Leucht-Aura (Halo)"),
-                                (button, value) -> manager.setHaloEnabled(value)
-                        )
-        );
-
-        List<Float> widths = List.of(1.5f, 2.2f, 3.2f, 4.5f);
-        addRenderableWidget(
-                CycleButton.builder(
-                                (Float w) -> Component.literal(w + " px"),
-                                closestWidth(manager.getOutlineWidth(), widths)
-                        )
-                        .withValues(widths)
-                        .create(
-                                rightX, startY + rowSpacing * 3, buttonWidth, buttonHeight,
-                                Component.literal("Linienstärke"),
-                                (button, value) -> manager.setOutlineWidth(value)
-                        )
-        );
-
-        // Row 4: Clear Selection Button
+        // Button 2: Clear Selection
         int selectedCount = manager.getHighlightedBlockIds().size();
         addRenderableWidget(
                 Button.builder(
                                 Component.literal("Auswahl leeren (" + selectedCount + " aktiv)"),
                                 btn -> {
-                                    manager.clearBlocks();
+                                    manager.clearBlocks(this.minecraft);
                                     btn.setMessage(Component.literal("Auswahl geleert (0 aktiv)"));
                                 }
                         )
-                        .bounds(this.width / 2 - 100, startY + rowSpacing * 4 + 4, 200, buttonHeight)
+                        .bounds(centerX, startY + spacing, buttonWidth, buttonHeight)
                         .build()
         );
 
-        // Bottom: Done Button
+        // Button 3: Done Button
         addRenderableWidget(
                 Button.builder(CommonComponents.GUI_DONE, btn -> onClose())
-                        .bounds(this.width / 2 - 100, this.height - 28, 200, 20)
+                        .bounds(centerX, this.height - 30, buttonWidth, buttonHeight)
                         .build()
         );
     }
@@ -162,12 +70,33 @@ public class HighlightConfigScreen extends Screen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor extractor, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(extractor, mouseX, mouseY, partialTick);
-        extractor.centeredText(this.font, this.title, this.width / 2, 16, 0xFFE080FF);
+        extractor.centeredText(this.font, this.title, this.width / 2, 18, 0xFFFFD700);
+
+        HighlightManager manager = HighlightManager.getInstance();
+        Set<String> blocks = manager.getHighlightedBlockIds();
+
+        int y = 110;
+        extractor.centeredText(this.font, Component.literal("Aktive Blöcke mit gelbem Ausrufezeichen (!):"), this.width / 2, y, 0xFFFFFFFF);
+        y += 16;
+
+        if (blocks.isEmpty()) {
+            extractor.centeredText(this.font, Component.literal("(Keine Blöcke ausgewählt)"), this.width / 2, y, 0xFF888888);
+        } else {
+            for (String id : blocks) {
+                if (y > this.height - 65) {
+                    extractor.centeredText(this.font, Component.literal("... und weitere"), this.width / 2, y, 0xFFAAAAAA);
+                    break;
+                }
+                extractor.centeredText(this.font, Component.literal("• " + id), this.width / 2, y, 0xFFFFEE55);
+                y += 13;
+            }
+        }
+
         extractor.centeredText(
                 this.font,
-                Component.literal("Tipp: Drücke 'H' im Spiel, um den anvisierten Block hervorzuheben"),
+                Component.literal("Tipp: Visiere einen Block an und drücke 'H', um ihn auszuwählen / zu entfernen!"),
                 this.width / 2,
-                this.height - 44,
+                this.height - 48,
                 0xFFAAAAAA
         );
     }
@@ -178,31 +107,5 @@ public class HighlightConfigScreen extends Screen {
         if (this.minecraft != null && this.minecraft.gui != null) {
             this.minecraft.gui.setScreen(this.parent);
         }
-    }
-
-    private static int closestDistance(int current, List<Integer> list) {
-        int best = list.get(0);
-        int diff = Math.abs(current - best);
-        for (int v : list) {
-            int d = Math.abs(current - v);
-            if (d < diff) {
-                diff = d;
-                best = v;
-            }
-        }
-        return best;
-    }
-
-    private static float closestWidth(float current, List<Float> list) {
-        float best = list.get(0);
-        float diff = Math.abs(current - best);
-        for (float v : list) {
-            float d = Math.abs(current - v);
-            if (d < diff) {
-                diff = d;
-                best = v;
-            }
-        }
-        return best;
     }
 }
