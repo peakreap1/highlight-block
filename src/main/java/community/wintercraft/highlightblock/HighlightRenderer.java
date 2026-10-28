@@ -219,8 +219,8 @@ public class HighlightRenderer {
         }
 
         tickCounter++;
-        // Scan every 4 ticks (~5 times per second)
-        if (tickCounter % 4 != 0) return;
+        // Scan every 3 ticks (~6 times per second)
+        if (tickCounter % 3 != 0) return;
 
         BlockPos playerPos = mc.player.blockPosition();
         ClientLevel level = mc.level;
@@ -232,7 +232,7 @@ public class HighlightRenderer {
 
         int radius = manager.getRenderDistance();
         int maxDistSq = radius * radius;
-        int chunkRadius = (radius + 15) >> 4;
+        int maxChunkRadius = (radius + 15) >> 4;
         int centerChunkX = px >> 4;
         int centerChunkZ = pz >> 4;
 
@@ -243,37 +243,55 @@ public class HighlightRenderer {
         List<BlockPos> visibleList = new ArrayList<>();
         BlockPos.MutableBlockPos neighborPos = new BlockPos.MutableBlockPos();
 
-        for (int cx = centerChunkX - chunkRadius; cx <= centerChunkX + chunkRadius; cx++) {
-            for (int cz = centerChunkZ - chunkRadius; cz <= centerChunkZ + chunkRadius; cz++) {
-                LevelChunk chunk = chunkSource.getChunk(cx, cz, ChunkStatus.FULL, false);
-                if (chunk == null) continue;
+        // CONCENTRIC SPIRAL SCAN:
+        // Always scan player's own chunk FIRST (Ring 0), then Ring 1, Ring 2...
+        // This guarantees that nearby blocks are NEVER cut off or missing when approaching!
+        scanChunk(chunkSource, level, manager, centerChunkX, centerChunkZ, px, py, pz, maxDistSq, minY, maxY, neighborPos, visibleList);
 
-                // Palette-accelerated chunk scan: skips empty/unrelated 16x16x16 sections in microseconds
-                chunk.findBlocks(
-                        state -> manager.isHighlighted(state.getBlock()),
-                        (bpos, state) -> {
-                            int by = bpos.getY();
-                            if (by < minY || by > maxY) return;
+        for (int r = 1; r <= maxChunkRadius; r++) {
+            if (visibleList.size() >= 800) break;
 
-                            int dx = bpos.getX() - px;
-                            int dy = by - py;
-                            int dz = bpos.getZ() - pz;
-                            if (dx * dx + dy * dy + dz * dz > maxDistSq) return;
-
-                            // Check if block has at least one exposed/visible face (fair play: not hidden in solid rock)
-                            if (isExposed(level, bpos, neighborPos)) {
-                                visibleList.add(bpos.immutable());
-                            }
-                        }
-                );
-
-                // Safety guard to cap visible blocks collection
-                if (visibleList.size() >= 1500) break;
+            for (int dx = -r; dx <= r; dx++) {
+                scanChunk(chunkSource, level, manager, centerChunkX + dx, centerChunkZ - r, px, py, pz, maxDistSq, minY, maxY, neighborPos, visibleList);
+                scanChunk(chunkSource, level, manager, centerChunkX + dx, centerChunkZ + r, px, py, pz, maxDistSq, minY, maxY, neighborPos, visibleList);
+                if (visibleList.size() >= 800) break;
             }
-            if (visibleList.size() >= 1500) break;
+            if (visibleList.size() >= 800) break;
+
+            for (int dz = -r + 1; dz <= r - 1; dz++) {
+                scanChunk(chunkSource, level, manager, centerChunkX - r, centerChunkZ + dz, px, py, pz, maxDistSq, minY, maxY, neighborPos, visibleList);
+                scanChunk(chunkSource, level, manager, centerChunkX + r, centerChunkZ + dz, px, py, pz, maxDistSq, minY, maxY, neighborPos, visibleList);
+                if (visibleList.size() >= 800) break;
+            }
         }
 
         cachedBlocks = visibleList;
+    }
+
+    private static void scanChunk(ClientChunkCache chunkSource, ClientLevel level, HighlightManager manager,
+                                  int cx, int cz, int px, int py, int pz, int maxDistSq, int minY, int maxY,
+                                  BlockPos.MutableBlockPos neighborPos, List<BlockPos> visibleList) {
+        LevelChunk chunk = chunkSource.getChunk(cx, cz, ChunkStatus.FULL, false);
+        if (chunk == null) return;
+
+        // Palette-accelerated chunk scan: skips empty/unrelated 16x16x16 sections in microseconds
+        chunk.findBlocks(
+                state -> manager.isHighlighted(state.getBlock()),
+                (bpos, state) -> {
+                    int by = bpos.getY();
+                    if (by < minY || by > maxY) return;
+
+                    int dx = bpos.getX() - px;
+                    int dy = by - py;
+                    int dz = bpos.getZ() - pz;
+                    if (dx * dx + dy * dy + dz * dz > maxDistSq) return;
+
+                    // Check if block has at least one exposed/visible face (fair play: not hidden in solid rock)
+                    if (isExposed(level, bpos, neighborPos)) {
+                        visibleList.add(bpos.immutable());
+                    }
+                }
+        );
     }
 
     private static boolean isExposed(Level level, BlockPos pos, BlockPos.MutableBlockPos npos) {

@@ -162,7 +162,7 @@ public class HighlightManager {
     }
 
     public void setRenderDistance(int renderDistance) {
-        this.renderDistance = Math.max(16, Math.min(256, renderDistance));
+        this.renderDistance = Math.max(16, Math.min(96, renderDistance));
         save();
     }
 

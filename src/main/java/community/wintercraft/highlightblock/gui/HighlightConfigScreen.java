@@ -7,7 +7,6 @@ import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.level.block.Blocks;
 
 import java.util.List;
 
@@ -62,7 +61,7 @@ public class HighlightConfigScreen extends Screen {
         );
 
         // Row 1: Render Distance & Animation Speed
-        List<Integer> distances = List.of(32, 48, 64, 96, 128, 160, 200);
+        List<Integer> distances = List.of(24, 36, 48, 64, 80, 96);
         addRenderableWidget(
                 CycleButton.builder(
                                 (Integer dist) -> Component.literal(dist + " Blöcke"),
@@ -114,31 +113,19 @@ public class HighlightConfigScreen extends Screen {
                         )
         );
 
-        // Row 3: Andesite Quick-Add & Clear Blocks
-        Button[] clearHolder = new Button[1];
-        Button addAndesiteBtn = Button.builder(
-                        Component.literal("+ Andesit hinzufügen"),
-                        btn -> {
-                            manager.addBlock(Blocks.ANDESITE);
-                            if (clearHolder[0] != null) {
-                                clearHolder[0].setMessage(Component.literal("Auswahl leeren (" + manager.getHighlightedBlockIds().size() + ")"));
-                            }
-                        }
-                )
-                .bounds(leftX, startY + rowSpacing * 3, buttonWidth, buttonHeight)
-                .build();
-        addRenderableWidget(addAndesiteBtn);
-
-        clearHolder[0] = Button.builder(
-                        Component.literal("Auswahl leeren (" + manager.getHighlightedBlockIds().size() + ")"),
-                        btn -> {
-                            manager.clearBlocks();
-                            btn.setMessage(Component.literal("Auswahl geleert (0)"));
-                        }
-                )
-                .bounds(rightX, startY + rowSpacing * 3, buttonWidth, buttonHeight)
-                .build();
-        addRenderableWidget(clearHolder[0]);
+        // Row 3: Clear Selection Button (centered, "+ Andesit" removed)
+        int selectedCount = manager.getHighlightedBlockIds().size();
+        addRenderableWidget(
+                Button.builder(
+                                Component.literal("Auswahl leeren (" + selectedCount + " aktiv)"),
+                                btn -> {
+                                    manager.clearBlocks();
+                                    btn.setMessage(Component.literal("Auswahl geleert (0 aktiv)"));
+                                }
+                        )
+                        .bounds(this.width / 2 - 100, startY + rowSpacing * 3, 200, buttonHeight)
+                        .build()
+        );
 
         // Bottom: Done Button
         addRenderableWidget(

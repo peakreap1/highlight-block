@@ -152,23 +152,22 @@ public class HighlightBlockClient implements ClientModInitializer {
                     .then(ClientCommands.literal("distance")
                             .executes(context -> {
                                 int dist = HighlightManager.getInstance().getRenderDistance();
-                                context.getSource().sendFeedback(Component.literal("[Highlight Block] Aktuelle Reichweite: " + dist + " Blöcke. (/hb distance <16-256>)").withStyle(ChatFormatting.LIGHT_PURPLE));
+                                context.getSource().sendFeedback(Component.literal("[Highlight Block] Aktuelle Reichweite: " + dist + " Blöcke. (/hb distance <16-96>)").withStyle(ChatFormatting.LIGHT_PURPLE));
                                 return 1;
                             })
-                            .then(ClientCommands.argument("blocks", IntegerArgumentType.integer(16, 256))
+                            .then(ClientCommands.argument("blocks", IntegerArgumentType.integer(16, 96))
                                     .executes(context -> {
                                         int dist = IntegerArgumentType.getInteger(context, "blocks");
                                         HighlightManager.getInstance().setRenderDistance(dist);
                                         context.getSource().sendFeedback(Component.literal("[Highlight Block] Reichweite auf " + dist + " Blöcke gesetzt!").withStyle(ChatFormatting.LIGHT_PURPLE));
                                         return 1;
                                     }))
-                            .then(ClientCommands.literal("32").executes(context -> setDistance(context, 32)))
+                            .then(ClientCommands.literal("24").executes(context -> setDistance(context, 24)))
+                            .then(ClientCommands.literal("36").executes(context -> setDistance(context, 36)))
                             .then(ClientCommands.literal("48").executes(context -> setDistance(context, 48)))
                             .then(ClientCommands.literal("64").executes(context -> setDistance(context, 64)))
+                            .then(ClientCommands.literal("80").executes(context -> setDistance(context, 80)))
                             .then(ClientCommands.literal("96").executes(context -> setDistance(context, 96)))
-                            .then(ClientCommands.literal("128").executes(context -> setDistance(context, 128)))
-                            .then(ClientCommands.literal("160").executes(context -> setDistance(context, 160)))
-                            .then(ClientCommands.literal("200").executes(context -> setDistance(context, 200)))
                     )
                     .then(ClientCommands.literal("mode")
                             .executes(context -> {
