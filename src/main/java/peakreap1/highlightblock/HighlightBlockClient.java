@@ -1,7 +1,7 @@
-package community.wintercraft.highlightblock;
+package peakreap1.highlightblock;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import community.wintercraft.highlightblock.gui.HighlightConfigScreen;
+import peakreap1.highlightblock.gui.HighlightConfigScreen;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;

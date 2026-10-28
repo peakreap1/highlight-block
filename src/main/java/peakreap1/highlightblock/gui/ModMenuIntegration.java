@@ -1,4 +1,4 @@
-package community.wintercraft.highlightblock.gui;
+package peakreap1.highlightblock.gui;
 
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;

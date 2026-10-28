@@ -1,4 +1,4 @@
-package community.wintercraft.highlightblock;
+package peakreap1.highlightblock;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

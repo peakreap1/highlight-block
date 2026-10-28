@@ -1,6 +1,6 @@
-package community.wintercraft.highlightblock.gui;
+package peakreap1.highlightblock.gui;
 
-import community.wintercraft.highlightblock.HighlightManager;
+import peakreap1.highlightblock.HighlightManager;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;

@@ -5,21 +5,18 @@
   "name": "Highlight Block",
   "description": "Easily spotlight and highlight any block in the world with bright colors and full visibility without X-Ray or wallhacks.",
   "authors": [
-    "Richard",
-    "Wintercraft Community"
+    "peakreap1"
   ],
-  "contact": {
-    "homepage": "https://wintercraft.community"
-  },
+  "contact": {},
   "license": "MIT",
   "icon": "assets/highlightblock/icon.png",
   "environment": "client",
   "entrypoints": {
     "client": [
-      "community.wintercraft.highlightblock.HighlightBlockClient"
+      "peakreap1.highlightblock.HighlightBlockClient"
     ],
     "modmenu": [
-      "community.wintercraft.highlightblock.gui.ModMenuIntegration"
+      "peakreap1.highlightblock.gui.ModMenuIntegration"
     ]
   },
   "mixins": [

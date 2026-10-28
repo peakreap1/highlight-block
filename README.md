@@ -1,37 +1,37 @@
-# 🌟 Highlight Block
+# Highlight Block
 
-**Highlight Block** ist eine ultra-performante, faire und unkomplizierte Client-Side-Mod für Minecraft Fabric (ab Version 26.2). Sie verwandelt jeden beliebigen Block in der Spielwelt per Knopfdruck in ein **leuchtendes gelbes Ausrufezeichen (!)**, damit du ihn beim Minen, Erkunden, Farmen oder Bauen auf jede Distanz sofort erkennst!
-
----
-
-### ✨ Features
-
-* **🎯 Block anvisieren & Hotkey drücken (`H`):**
-  Schaue einfach den Block an, den du hervorheben möchtest (z. B. Andesit, Tiefenschiefer-Diamanterz, Antiker Schrott) und drücke **`H`**. Die Textur wechselt automatisch zum auffälligen gelben Ausrufezeichen! Nochmaliges Drücken setzt die Textur wieder auf das Original zurück.
-* **⚡ 0 % FPS-Verlust & Maximale Render-Distanz:**
-  Weil die Mod keine rechenintensiven Shader oder Render-Overlays nutzt, sondern ein dynamisches, natives In-Game-Texturpaket im Hintergrund verwaltet, hast du **absolut null Lag** – egal ob 12 oder 128 Chunks Sichtweite!
-* **💡 Perfekte Höhlen-Sichtbarkeit:**
-  Das gelbe Ausrufezeichen sticht mit hohem Kontrast und dunklem Hintergrund selbst in pechschwarzen Schluchten und Höhlen sofort ins Auge.
-* **🚫 100 % Fair (Kein X-Ray / Wallhack):**
-  Die Mod verändert ausschließlich sichtbare Texturen von Blöcken. Es werden **keine** verdeckten Blöcke durch Steinwände hindurch gerendert. Völlig legitim auf jedem Multiplayer-Server!
-* **⚙️ Mod Menu & Konfigurationsmenü:**
-  Vollständige Unterstützung für **Mod Menu**! Du kannst die Konfiguration direkt in den Einstellungen oder im Chat öffnen:
-  * `/hb gui` oder `/hb config` – Öffnet das Einstellungsmenü
-  * `/hb list` – Zeigt alle aktuell hervorgehobenen Blöcke an
-  * `/hb clear` – Setzt alle Auswahlen zurück
-* **🔌 Funktioniert Out-of-the-Box:**
-  Einfach in den `mods`-Ordner werfen und loslegen. Keine manuelle Texturepack-Einrichtung notwendig!
+Highlight Block ist eine hochperformante, faire und unkomplizierte Client-Side-Mod fuer Minecraft Fabric (ab Version 26.2). Sie verwandelt jeden beliebigen Block in der Spielwelt per Knopfdruck in ein leuchtendes gelbes Ausrufezeichen (!), damit du ihn beim Minen, Erkunden, Farmen oder Bauen auf jede Distanz sofort erkennst.
 
 ---
 
-### 🎮 Steuerung & Tastaturkürzel
-* **`H`**: Block anvisieren und Textur umschalten (Ausrufezeichen an/aus)
+### Features
 
-*(Die Taste kann im normalen Minecraft-Steuerungsmenü unter Optionen -> Steuerung -> Tastenbelegung -> "Highlight Block" beliebig angepasst werden).*
+* **Block anvisieren & Hotkey druecken (H):**
+  Schaue einfach den Block an, den du hervorheben moechtest (z. B. Andesit, Tiefenschiefer-Diamanterz, Antiker Schrott) und druecke **H**. Die Textur wechselt automatisch zum auffaelligen gelben Ausrufezeichen. Nochmaliges Druecken setzt die Textur wieder auf das Original zurueck.
+* **0 % FPS-Verlust & Maximale Render-Distanz:**
+  Weil die Mod keine rechenintensiven Shader oder Render-Overlays nutzt, sondern ein dynamisches Texturpaket im Hintergrund verwaltet, hast du keinerlei Framerate-Einbrueche - egal ob 12 oder 64 Chunks Sichtweite.
+* **Hohe Hoehlen-Sichtbarkeit:**
+  Das gelbe Ausrufezeichen hebt sich durch seinen starken Kontrast und dunklen Rahmen selbst in dunklen Schluchten und Hoehlen sofort ab.
+* **100 % Fair (Kein X-Ray / Wallhack):**
+  Die Mod veraendert ausschliesslich sichtbare Texturen von Bloecken. Es werden keine verdeckten Bloecke durch Steinwaende hindurch gerendert. Voellig legitim auf Multiplayer-Servern.
+* **Mod Menu & Konfigurationsmenue:**
+  Vollstaendige Unterstuetzung fuer Mod Menu. Du kannst die Konfiguration direkt in den Einstellungen oder im Chat oeffnen:
+  * `/hb gui` oder `/hb config` - Oeffnet das Einstellungsmenue
+  * `/hb list` - Zeigt alle aktuell hervorgehobenen Bloecke an
+  * `/hb clear` - Setzt alle Auswahlen zurueck
+* **Out-of-the-Box:**
+  Einfach in den `mods`-Ordner legen. Keine manuelle Texturepack-Einrichtung notwendig.
 
 ---
 
-### 📦 Voraussetzungen
+### Steuerung & Tastaturkuerzel
+* **H**: Block anvisieren und Textur umschalten (Ausrufezeichen an/aus)
+
+*(Die Taste kann im normalen Minecraft-Steuerungsmenue unter Optionen -> Steuerung -> Tastenbelegung -> "Highlight Block" beliebig angepasst werden).*
+
+---
+
+### Voraussetzungen
 * Minecraft Fabric 26.2+
 * Fabric Loader 0.16.0+
 * Fabric API
@@ -39,5 +39,5 @@
 
 ---
 
-### 📄 Lizenz
-MIT License © 2026 Richard & Wintercraft Community
+### Lizenz
+MIT License (c) 2026 peakreap1
