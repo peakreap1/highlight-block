@@ -47,6 +47,9 @@ public class HighlightBlockClient implements ClientModInitializer {
                 category
         ));
 
+        // Initialize Level Outline Renderer
+        HighlightRenderer.init();
+
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null || client.level == null) return;
 
@@ -57,6 +60,8 @@ public class HighlightBlockClient implements ClientModInitializer {
             while (keyToggleAll.consumeClick()) {
                 handleToggleAll(client);
             }
+
+            HighlightRenderer.clientTick(client);
         });
 
         registerCommands();
@@ -73,22 +78,22 @@ public class HighlightBlockClient implements ClientModInitializer {
             if (id != null) {
                 boolean active = HighlightManager.getInstance().toggleBlock(block);
                 Component msg = Component.literal("[Highlight Block] ")
-                        .withStyle(ChatFormatting.GOLD)
+                        .withStyle(ChatFormatting.LIGHT_PURPLE)
                         .append(Component.literal(block.getName().getString()).withStyle(ChatFormatting.WHITE))
-                        .append(Component.literal(active ? " hervorgehoben (Aktiv)" : " Hervorhebung entfernt (Aus)")
-                                .withStyle(active ? ChatFormatting.YELLOW : ChatFormatting.GRAY));
+                        .append(Component.literal(active ? " [Lila Umrandung Aktiv]" : " [Umrandung Entfernt]")
+                                .withStyle(active ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.GRAY));
                 client.player.sendSystemMessage(msg);
             }
         } else {
-            client.player.sendSystemMessage(Component.literal("[Highlight Block] Schaue einen Block an, um ihn hervorzuheben!")
+            client.player.sendSystemMessage(Component.literal("[Highlight Block] Schaue einen Block an, um ihn mit Umrandung hervorzuheben!")
                     .withStyle(ChatFormatting.RED));
         }
     }
 
     private void handleToggleAll(Minecraft client) {
         boolean enabled = HighlightManager.getInstance().toggleEnabled();
-        Component msg = Component.literal("[Highlight Block] Mod ist jetzt ")
-                .withStyle(ChatFormatting.GOLD)
+        Component msg = Component.literal("[Highlight Block] Umrandungen sind jetzt ")
+                .withStyle(ChatFormatting.LIGHT_PURPLE)
                 .append(Component.literal(enabled ? "AKTIVIERT" : "DEAKTIVIERT")
                         .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.RED));
         client.player.sendSystemMessage(msg);
@@ -100,13 +105,13 @@ public class HighlightBlockClient implements ClientModInitializer {
                     .then(ClientCommands.literal("toggle")
                             .executes(context -> {
                                 boolean en = HighlightManager.getInstance().toggleEnabled();
-                                context.getSource().sendFeedback(Component.literal("[Highlight Block] Aktiv: " + en).withStyle(ChatFormatting.YELLOW));
+                                context.getSource().sendFeedback(Component.literal("[Highlight Block] Aktiv: " + en).withStyle(ChatFormatting.LIGHT_PURPLE));
                                 return 1;
                             }))
                     .then(ClientCommands.literal("clear")
                             .executes(context -> {
                                 HighlightManager.getInstance().clearBlocks();
-                                context.getSource().sendFeedback(Component.literal("[Highlight Block] Alle Block-Hervorhebungen entfernt.").withStyle(ChatFormatting.YELLOW));
+                                context.getSource().sendFeedback(Component.literal("[Highlight Block] Alle Block-Umrandungen entfernt.").withStyle(ChatFormatting.LIGHT_PURPLE));
                                 return 1;
                             }))
                     .then(ClientCommands.literal("list")
@@ -115,9 +120,9 @@ public class HighlightBlockClient implements ClientModInitializer {
                                 if (list.isEmpty()) {
                                     context.getSource().sendFeedback(Component.literal("[Highlight Block] Keine Blöcke ausgewählt.").withStyle(ChatFormatting.GRAY));
                                 } else {
-                                    context.getSource().sendFeedback(Component.literal("[Highlight Block] Aktive Blöcke:").withStyle(ChatFormatting.GOLD));
+                                    context.getSource().sendFeedback(Component.literal("[Highlight Block] Aktive Blöcke:").withStyle(ChatFormatting.LIGHT_PURPLE));
                                     for (String b : list) {
-                                        context.getSource().sendFeedback(Component.literal(" - " + b).withStyle(ChatFormatting.YELLOW));
+                                        context.getSource().sendFeedback(Component.literal(" - " + b).withStyle(ChatFormatting.WHITE));
                                     }
                                 }
                                 return 1;

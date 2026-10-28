@@ -21,8 +21,16 @@ public class HighlightManager {
     private static final HighlightManager INSTANCE = new HighlightManager();
 
     private boolean enabled = true;
-    private boolean fullbright = true;
-    private int highlightColor = 0xFFEE00; // Brilliant Signal Yellow
+    private boolean outlineEnabled = true;
+    private boolean blockTintEnabled = false; // User requested outline instead of block-based fullbright
+    private boolean fullbright = false;
+    private boolean seeThrough = false; // No X-Ray: strictly occluded by walls
+
+    // Vibrant Glowing Electric Purple / Violet (ARGB: 0xFFD000FF)
+    private int outlineColor = 0xFFD000FF;
+    private float outlineWidth = 2.5f;
+    private int highlightColor = 0xFFEE00;
+
     private final Set<String> highlightedBlockIds = new HashSet<>();
     private final HighlightTintSource tintSource = new HighlightTintSource();
 
@@ -51,6 +59,25 @@ public class HighlightManager {
         return this.enabled;
     }
 
+    public boolean isOutlineEnabled() {
+        return outlineEnabled;
+    }
+
+    public void setOutlineEnabled(boolean outlineEnabled) {
+        this.outlineEnabled = outlineEnabled;
+        save();
+    }
+
+    public boolean isBlockTintEnabled() {
+        return blockTintEnabled;
+    }
+
+    public void setBlockTintEnabled(boolean blockTintEnabled) {
+        this.blockTintEnabled = blockTintEnabled;
+        save();
+        refreshWorld();
+    }
+
     public boolean isFullbright() {
         return fullbright;
     }
@@ -59,6 +86,33 @@ public class HighlightManager {
         this.fullbright = fullbright;
         save();
         refreshWorld();
+    }
+
+    public boolean isSeeThrough() {
+        return seeThrough;
+    }
+
+    public void setSeeThrough(boolean seeThrough) {
+        this.seeThrough = seeThrough;
+        save();
+    }
+
+    public int getOutlineColor() {
+        return outlineColor;
+    }
+
+    public void setOutlineColor(int outlineColor) {
+        this.outlineColor = outlineColor;
+        save();
+    }
+
+    public float getOutlineWidth() {
+        return outlineWidth;
+    }
+
+    public void setOutlineWidth(float outlineWidth) {
+        this.outlineWidth = outlineWidth;
+        save();
     }
 
     public int getHighlightColor() {
@@ -79,6 +133,10 @@ public class HighlightManager {
         if (!enabled) return false;
         Identifier id = BuiltInRegistries.BLOCK.getKey(block);
         return id != null && highlightedBlockIds.contains(id.toString());
+    }
+
+    public boolean isHighlightedForTint(Block block) {
+        return blockTintEnabled && isHighlighted(block);
     }
 
     public boolean toggleBlock(Block block) {
@@ -151,7 +209,12 @@ public class HighlightManager {
             }
             ConfigData data = new ConfigData();
             data.enabled = this.enabled;
+            data.outlineEnabled = this.outlineEnabled;
+            data.blockTintEnabled = this.blockTintEnabled;
             data.fullbright = this.fullbright;
+            data.seeThrough = this.seeThrough;
+            data.outlineColor = this.outlineColor;
+            data.outlineWidth = this.outlineWidth;
             data.highlightColor = this.highlightColor;
             data.highlightedBlocks = this.highlightedBlockIds;
             try (FileWriter writer = new FileWriter(file)) {
@@ -170,7 +233,12 @@ public class HighlightManager {
                     ConfigData data = GSON.fromJson(reader, ConfigData.class);
                     if (data != null) {
                         this.enabled = data.enabled;
+                        this.outlineEnabled = data.outlineEnabled;
+                        this.blockTintEnabled = data.blockTintEnabled;
                         this.fullbright = data.fullbright;
+                        this.seeThrough = data.seeThrough;
+                        this.outlineColor = data.outlineColor != 0 ? data.outlineColor : 0xFFD000FF;
+                        this.outlineWidth = data.outlineWidth > 0 ? data.outlineWidth : 2.5f;
                         this.highlightColor = data.highlightColor != 0 ? data.highlightColor : 0xFFEE00;
                         if (data.highlightedBlocks != null) {
                             this.highlightedBlockIds.clear();
@@ -186,7 +254,12 @@ public class HighlightManager {
 
     private static class ConfigData {
         boolean enabled = true;
-        boolean fullbright = true;
+        boolean outlineEnabled = true;
+        boolean blockTintEnabled = false;
+        boolean fullbright = false;
+        boolean seeThrough = false;
+        int outlineColor = 0xFFD000FF;
+        float outlineWidth = 2.5f;
         int highlightColor = 0xFFEE00;
         Set<String> highlightedBlocks = new HashSet<>();
     }
