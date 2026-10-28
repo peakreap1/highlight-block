@@ -15,7 +15,7 @@ public class BlockStateModelSetMixin {
 
     @Inject(method = "get", at = @At("RETURN"), cancellable = true)
     private void onGetModel(BlockState state, CallbackInfoReturnable<BlockStateModel> cir) {
-        if (HighlightManager.getInstance().isHighlightedForTint(state.getBlock())) {
+        if (HighlightManager.getInstance().isHighlightedForModel(state.getBlock())) {
             BlockStateModel orig = cir.getReturnValue();
             if (orig != null) {
                 cir.setReturnValue(HighlightModelWrapper.wrap(orig));

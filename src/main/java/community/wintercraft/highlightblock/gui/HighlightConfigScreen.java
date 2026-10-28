@@ -28,15 +28,15 @@ public class HighlightConfigScreen extends Screen {
         int leftX = this.width / 2 - buttonWidth - 5;
         int rightX = this.width / 2 + 5;
 
-        int startY = 48;
-        int rowSpacing = 26;
+        int startY = 36;
+        int rowSpacing = 24;
 
-        // Row 0: On/Off & Mode
+        // Row 0: Master Enabled & Animation Mode
         addRenderableWidget(
                 CycleButton.onOffBuilder(manager.isEnabled())
                         .create(
                                 leftX, startY, buttonWidth, buttonHeight,
-                                Component.literal("Leucht-Umrandungen"),
+                                Component.literal("Highlight Mod"),
                                 (button, value) -> manager.setEnabled(value)
                         )
         );
@@ -55,12 +55,31 @@ public class HighlightConfigScreen extends Screen {
                         .withValues(HighlightManager.AnimationMode.values())
                         .create(
                                 rightX, startY, buttonWidth, buttonHeight,
-                                Component.literal("Modus"),
+                                Component.literal("Outline Stil"),
                                 (button, value) -> manager.setAnimationMode(value)
                         )
         );
 
-        // Row 1: Render Distance & Animation Speed
+        // Row 1: Texture Swap (Yellow '!') & Animated Outline
+        addRenderableWidget(
+                CycleButton.onOffBuilder(manager.isTextureSwapEnabled())
+                        .create(
+                                leftX, startY + rowSpacing, buttonWidth, buttonHeight,
+                                Component.literal("Gelbes '!' Textur"),
+                                (button, value) -> manager.setTextureSwapEnabled(value)
+                        )
+        );
+
+        addRenderableWidget(
+                CycleButton.onOffBuilder(manager.isOutlineEnabled())
+                        .create(
+                                rightX, startY + rowSpacing, buttonWidth, buttonHeight,
+                                Component.literal("Animierte Outline"),
+                                (button, value) -> manager.setOutlineEnabled(value)
+                        )
+        );
+
+        // Row 2: Render Distance & Animation Speed
         List<Integer> distances = List.of(24, 36, 48, 64, 80, 96);
         addRenderableWidget(
                 CycleButton.builder(
@@ -69,8 +88,8 @@ public class HighlightConfigScreen extends Screen {
                         )
                         .withValues(distances)
                         .create(
-                                leftX, startY + rowSpacing, buttonWidth, buttonHeight,
-                                Component.literal("Reichweite"),
+                                leftX, startY + rowSpacing * 2, buttonWidth, buttonHeight,
+                                Component.literal("Outline Reichweite"),
                                 (button, value) -> manager.setRenderDistance(value)
                         )
         );
@@ -83,17 +102,17 @@ public class HighlightConfigScreen extends Screen {
                         )
                         .withValues(speeds)
                         .create(
-                                rightX, startY + rowSpacing, buttonWidth, buttonHeight,
+                                rightX, startY + rowSpacing * 2, buttonWidth, buttonHeight,
                                 Component.literal("Animations-Tempo"),
                                 (button, value) -> manager.setAnimationSpeed(value)
                         )
         );
 
-        // Row 2: Halo Bloom & Outline Width
+        // Row 3: Halo Bloom & Outline Width
         addRenderableWidget(
                 CycleButton.onOffBuilder(manager.isHaloEnabled())
                         .create(
-                                leftX, startY + rowSpacing * 2, buttonWidth, buttonHeight,
+                                leftX, startY + rowSpacing * 3, buttonWidth, buttonHeight,
                                 Component.literal("Leucht-Aura (Halo)"),
                                 (button, value) -> manager.setHaloEnabled(value)
                         )
@@ -107,13 +126,13 @@ public class HighlightConfigScreen extends Screen {
                         )
                         .withValues(widths)
                         .create(
-                                rightX, startY + rowSpacing * 2, buttonWidth, buttonHeight,
+                                rightX, startY + rowSpacing * 3, buttonWidth, buttonHeight,
                                 Component.literal("Linienstärke"),
                                 (button, value) -> manager.setOutlineWidth(value)
                         )
         );
 
-        // Row 3: Clear Selection Button (centered, "+ Andesit" removed)
+        // Row 4: Clear Selection Button
         int selectedCount = manager.getHighlightedBlockIds().size();
         addRenderableWidget(
                 Button.builder(
@@ -123,14 +142,14 @@ public class HighlightConfigScreen extends Screen {
                                     btn.setMessage(Component.literal("Auswahl geleert (0 aktiv)"));
                                 }
                         )
-                        .bounds(this.width / 2 - 100, startY + rowSpacing * 3, 200, buttonHeight)
+                        .bounds(this.width / 2 - 100, startY + rowSpacing * 4 + 4, 200, buttonHeight)
                         .build()
         );
 
         // Bottom: Done Button
         addRenderableWidget(
                 Button.builder(CommonComponents.GUI_DONE, btn -> onClose())
-                        .bounds(this.width / 2 - 100, this.height - 30, 200, 20)
+                        .bounds(this.width / 2 - 100, this.height - 28, 200, 20)
                         .build()
         );
     }
@@ -143,12 +162,12 @@ public class HighlightConfigScreen extends Screen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor extractor, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(extractor, mouseX, mouseY, partialTick);
-        extractor.centeredText(this.font, this.title, this.width / 2, 20, 0xFFE080FF);
+        extractor.centeredText(this.font, this.title, this.width / 2, 16, 0xFFE080FF);
         extractor.centeredText(
                 this.font,
-                Component.literal("Tipp: Drücke 'H' im Spiel, um den anvisierten Block auszuwählen / zu entfernen"),
+                Component.literal("Tipp: Drücke 'H' im Spiel, um den anvisierten Block hervorzuheben"),
                 this.width / 2,
-                this.height - 48,
+                this.height - 44,
                 0xFFAAAAAA
         );
     }

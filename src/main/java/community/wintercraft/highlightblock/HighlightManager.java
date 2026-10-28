@@ -30,6 +30,7 @@ public class HighlightManager {
 
     private boolean enabled = true;
     private boolean outlineEnabled = true;
+    private boolean textureSwapEnabled = true; // Yellow exclamation mark texture swap
     private boolean blockTintEnabled = false;
     private boolean fullbright = false;
     private boolean seeThrough = false; // No X-Ray: strictly occluded by walls
@@ -81,6 +82,16 @@ public class HighlightManager {
     public void setOutlineEnabled(boolean outlineEnabled) {
         this.outlineEnabled = outlineEnabled;
         save();
+    }
+
+    public boolean isTextureSwapEnabled() {
+        return textureSwapEnabled;
+    }
+
+    public void setTextureSwapEnabled(boolean textureSwapEnabled) {
+        this.textureSwapEnabled = textureSwapEnabled;
+        save();
+        refreshWorld();
     }
 
     public boolean isBlockTintEnabled() {
@@ -208,6 +219,12 @@ public class HighlightManager {
         return blockTintEnabled && isHighlighted(block);
     }
 
+    public boolean isHighlightedForModel(Block block) {
+        if (!enabled) return false;
+        if (!isHighlighted(block)) return false;
+        return textureSwapEnabled || blockTintEnabled || fullbright;
+    }
+
     public boolean toggleBlock(Block block) {
         Identifier id = BuiltInRegistries.BLOCK.getKey(block);
         if (id == null) return false;
@@ -255,14 +272,17 @@ public class HighlightManager {
 
     public void refreshWorld() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.levelRenderer != null && mc.level != null && mc.gameRenderer != null) {
-            mc.levelRenderer.invalidateCompiledGeometry(
-                    mc.level,
-                    mc.options,
-                    mc.gameRenderer.mainCamera(),
-                    mc.getBlockColors()
-            );
-        }
+        if (mc == null) return;
+        mc.execute(() -> {
+            if (mc.levelRenderer != null && mc.level != null && mc.gameRenderer != null) {
+                mc.levelRenderer.invalidateCompiledGeometry(
+                        mc.level,
+                        mc.options,
+                        mc.gameRenderer.mainCamera(),
+                        mc.getBlockColors()
+                );
+            }
+        });
     }
 
     private File getConfigFile() {
@@ -279,6 +299,7 @@ public class HighlightManager {
             ConfigData data = new ConfigData();
             data.enabled = this.enabled;
             data.outlineEnabled = this.outlineEnabled;
+            data.textureSwapEnabled = this.textureSwapEnabled;
             data.blockTintEnabled = this.blockTintEnabled;
             data.fullbright = this.fullbright;
             data.seeThrough = this.seeThrough;
@@ -309,6 +330,7 @@ public class HighlightManager {
                     if (data != null) {
                         this.enabled = data.enabled;
                         this.outlineEnabled = data.outlineEnabled;
+                        this.textureSwapEnabled = data.textureSwapEnabled;
                         this.blockTintEnabled = data.blockTintEnabled;
                         this.fullbright = data.fullbright;
                         this.seeThrough = data.seeThrough;
@@ -342,6 +364,7 @@ public class HighlightManager {
     private static class ConfigData {
         boolean enabled = true;
         boolean outlineEnabled = true;
+        boolean textureSwapEnabled = true;
         boolean blockTintEnabled = false;
         boolean fullbright = false;
         boolean seeThrough = false;

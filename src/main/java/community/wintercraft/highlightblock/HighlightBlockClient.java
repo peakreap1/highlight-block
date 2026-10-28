@@ -82,10 +82,10 @@ public class HighlightBlockClient implements ClientModInitializer {
             if (id != null) {
                 boolean active = HighlightManager.getInstance().toggleBlock(block);
                 Component msg = Component.literal("[Highlight Block] ")
-                        .withStyle(ChatFormatting.LIGHT_PURPLE)
+                        .withStyle(ChatFormatting.GOLD)
                         .append(Component.literal(block.getName().getString()).withStyle(ChatFormatting.WHITE))
-                        .append(Component.literal(active ? " [Animierte Leuchtoutline AKTIV]" : " [Umrandung ENTFERNT]")
-                                .withStyle(active ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.GRAY));
+                        .append(Component.literal(active ? " [Hervorgehoben!]" : " [Entfernt]")
+                                .withStyle(active ? ChatFormatting.GREEN : ChatFormatting.GRAY));
                 client.player.sendSystemMessage(msg);
             }
         } else {
@@ -149,6 +149,34 @@ public class HighlightBlockClient implements ClientModInitializer {
                                 }
                                 return 1;
                             }))
+                    .then(ClientCommands.literal("texture")
+                            .then(ClientCommands.literal("on")
+                                    .executes(context -> {
+                                        HighlightManager.getInstance().setTextureSwapEnabled(true);
+                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Gelbes '!' Textur: AKTIVIERT").withStyle(ChatFormatting.GOLD));
+                                        return 1;
+                                    }))
+                            .then(ClientCommands.literal("off")
+                                    .executes(context -> {
+                                        HighlightManager.getInstance().setTextureSwapEnabled(false);
+                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Gelbes '!' Textur: DEAKTIVIERT").withStyle(ChatFormatting.GRAY));
+                                        return 1;
+                                    }))
+                    )
+                    .then(ClientCommands.literal("outline")
+                            .then(ClientCommands.literal("on")
+                                    .executes(context -> {
+                                        HighlightManager.getInstance().setOutlineEnabled(true);
+                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Animierte Outline: AKTIVIERT").withStyle(ChatFormatting.LIGHT_PURPLE));
+                                        return 1;
+                                    }))
+                            .then(ClientCommands.literal("off")
+                                    .executes(context -> {
+                                        HighlightManager.getInstance().setOutlineEnabled(false);
+                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Animierte Outline: DEAKTIVIERT").withStyle(ChatFormatting.GRAY));
+                                        return 1;
+                                    }))
+                    )
                     .then(ClientCommands.literal("distance")
                             .executes(context -> {
                                 int dist = HighlightManager.getInstance().getRenderDistance();
