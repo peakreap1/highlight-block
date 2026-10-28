@@ -150,7 +150,7 @@ public class HighlightConfigScreen extends Screen {
 
     @Override
     public void extractBackground(GuiGraphicsExtractor extractor, int mouseX, int mouseY, float partialTick) {
-        extractMenuBackground(extractor);
+        super.extractBackground(extractor, mouseX, mouseY, partialTick);
     }
 
     @Override
