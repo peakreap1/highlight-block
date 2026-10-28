@@ -3,6 +3,7 @@ package community.wintercraft.highlightblock;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import community.wintercraft.highlightblock.gui.HighlightConfigScreen;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
@@ -111,6 +112,18 @@ public class HighlightBlockClient implements ClientModInitializer {
     private void registerCommands() {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
             dispatcher.register(ClientCommands.literal("highlightblock")
+                    .then(ClientCommands.literal("config")
+                            .executes(context -> {
+                                Minecraft client = Minecraft.getInstance();
+                                client.execute(() -> client.gui.setScreen(new HighlightConfigScreen(client.gui.screen())));
+                                return 1;
+                            }))
+                    .then(ClientCommands.literal("gui")
+                            .executes(context -> {
+                                Minecraft client = Minecraft.getInstance();
+                                client.execute(() -> client.gui.setScreen(new HighlightConfigScreen(client.gui.screen())));
+                                return 1;
+                            }))
                     .then(ClientCommands.literal("toggle")
                             .executes(context -> {
                                 boolean en = HighlightManager.getInstance().toggleEnabled();

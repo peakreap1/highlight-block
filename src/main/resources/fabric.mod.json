@@ -17,6 +17,9 @@
   "entrypoints": {
     "client": [
       "community.wintercraft.highlightblock.HighlightBlockClient"
+    ],
+    "modmenu": [
+      "community.wintercraft.highlightblock.gui.ModMenuIntegration"
     ]
   },
   "mixins": [
