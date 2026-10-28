@@ -128,6 +128,74 @@ public class HighlightManager {
         return null;
     }
 
+    private static final Set<String> EXCLUDED_GENERIC_TEXTURES = Set.of(
+        "block/stone",
+        "block/deepslate",
+        "block/dirt",
+        "block/cobblestone",
+        "block/cobbled_deepslate",
+        "block/smooth_stone",
+        "block/bedrock",
+        "block/netherrack",
+        "block/end_stone",
+        "block/sand",
+        "block/gravel"
+    );
+
+    private static boolean shouldIncludeTexture(String texPath, String blockPath) {
+        if (texPath == null || blockPath == null) return false;
+
+        // If it's a generic base material, only include it if the block itself is that material
+        for (String generic : EXCLUDED_GENERIC_TEXTURES) {
+            if (texPath.equals(generic)) {
+                String genericName = generic.substring(generic.lastIndexOf('/') + 1);
+                return blockPath.equals(genericName);
+            }
+        }
+
+        // 1. Direct or substring match (e.g. "block/redstone_ore", "block/deepslate_redstone_ore")
+        if (texPath.contains(blockPath)) {
+            return true;
+        }
+
+        // 2. Deepslate variants (e.g. block "deepslate_redstone_ore", tex "block/redstone_ore/deepslate_off")
+        if (blockPath.startsWith("deepslate_")) {
+            String base = blockPath.substring("deepslate_".length()); // e.g. "redstone_ore"
+            String baseNoOre = base.replace("_ore", ""); // e.g. "redstone"
+            if (texPath.contains("deepslate") && (texPath.contains(base) || texPath.contains(baseNoOre))) {
+                return true;
+            }
+        }
+
+        // 3. Ore variants (e.g. block "redstone_ore", tex "block/redstone_ore/off" or "block/redstone_ore/on")
+        if (blockPath.endsWith("_ore")) {
+            String baseOre = blockPath.replace("_ore", ""); // e.g. "redstone"
+            if (texPath.contains(baseOre)) {
+                return true;
+            }
+        }
+
+        // 4. Token matching: all non-empty tokens of blockPath are contained in texPath
+        if (blockPath.contains("_")) {
+            String[] parts = blockPath.split("_");
+            boolean allParts = true;
+            for (String p : parts) {
+                if (!p.isEmpty() && !texPath.contains(p)) {
+                    allParts = false;
+                    break;
+                }
+            }
+            if (allParts) return true;
+        }
+
+        // 5. If texPath is placed in a folder dedicated to this block
+        if (texPath.contains("/" + blockPath + "/")) {
+            return true;
+        }
+
+        return false;
+    }
+
     public static Set<String> getTexturePathsForBlock(Minecraft mc, Block block) {
         Set<String> list = new LinkedHashSet<>();
         Identifier blockId = BuiltInRegistries.BLOCK.getKey(block);
@@ -136,14 +204,15 @@ public class HighlightManager {
         String ns = blockId.getNamespace();
         String path = blockId.getPath();
 
-        // 1. Extract textures from live block model quads
+        // 1. Extract textures from all possible block model states and quads
         try {
-            BlockState defaultState = block.defaultBlockState();
             if (mc != null && mc.getModelManager() != null) {
                 BlockStateModelSet modelSet = mc.getModelManager().getBlockStateModelSet();
                 if (modelSet != null) {
-                    BlockStateModel model = modelSet.get(defaultState);
-                    if (model != null) {
+                    for (BlockState state : block.getStateDefinition().getPossibleStates()) {
+                        BlockStateModel model = modelSet.get(state);
+                        if (model == null) continue;
+
                         List<BlockStateModelPart> parts = new ArrayList<>();
                         model.collectParts(RandomSource.create(42L), parts);
                         for (BlockStateModelPart part : parts) {
@@ -151,9 +220,11 @@ public class HighlightManager {
                                 List<BakedQuad> quads = part.getQuads(dir);
                                 if (quads != null) {
                                     for (BakedQuad q : quads) {
-                                        Identifier tex = q.materialInfo().sprite().contents().name();
-                                        if (tex != null && tex.getPath().contains(path)) {
-                                            list.add("assets/" + tex.getNamespace() + "/textures/" + tex.getPath() + ".png");
+                                        if (q.materialInfo() != null && q.materialInfo().sprite() != null && q.materialInfo().sprite().contents() != null) {
+                                            Identifier tex = q.materialInfo().sprite().contents().name();
+                                            if (tex != null && shouldIncludeTexture(tex.getPath(), path)) {
+                                                list.add("assets/" + tex.getNamespace() + "/textures/" + tex.getPath() + ".png");
+                                            }
                                         }
                                     }
                                 }
@@ -161,9 +232,11 @@ public class HighlightManager {
                             List<BakedQuad> unculled = part.getQuads(null);
                             if (unculled != null) {
                                 for (BakedQuad q : unculled) {
-                                    Identifier tex = q.materialInfo().sprite().contents().name();
-                                    if (tex != null && tex.getPath().contains(path)) {
-                                        list.add("assets/" + tex.getNamespace() + "/textures/" + tex.getPath() + ".png");
+                                    if (q.materialInfo() != null && q.materialInfo().sprite() != null && q.materialInfo().sprite().contents() != null) {
+                                        Identifier tex = q.materialInfo().sprite().contents().name();
+                                        if (tex != null && shouldIncludeTexture(tex.getPath(), path)) {
+                                            list.add("assets/" + tex.getNamespace() + "/textures/" + tex.getPath() + ".png");
+                                        }
                                     }
                                 }
                             }
@@ -180,6 +253,24 @@ public class HighlightManager {
         list.add("assets/" + ns + "/textures/block/" + path + "_top.png");
         list.add("assets/" + ns + "/textures/block/" + path + "_side.png");
         list.add("assets/" + ns + "/textures/block/" + path + "_bottom.png");
+
+        // 3. Explicit fallbacks for redstone ore variants across popular resource packs (e.g. Redstone Tweaks)
+        if (path.equals("redstone_ore")) {
+            list.add("assets/minecraft/textures/block/lit_redstone_ore.png");
+            list.add("assets/minecraft/textures/block/redstone_ore/off.png");
+            list.add("assets/minecraft/textures/block/redstone_ore/on.png");
+            list.add("assets/minecraft/textures/block/redstone_ore/redstone_ore.png");
+            list.add("assets/minecraft/textures/block/redstone_ore/lit_redstone_ore.png");
+        } else if (path.equals("deepslate_redstone_ore")) {
+            list.add("assets/minecraft/textures/block/lit_deepslate_redstone_ore.png");
+            list.add("assets/minecraft/textures/block/deepslate_redstone_ore_top.png");
+            list.add("assets/minecraft/textures/block/deepslate_redstone_ore_side.png");
+            list.add("assets/minecraft/textures/block/deepslate_redstone_ore_bottom.png");
+            list.add("assets/minecraft/textures/block/redstone_ore/deepslate_off.png");
+            list.add("assets/minecraft/textures/block/redstone_ore/deepslate_on.png");
+            list.add("assets/minecraft/textures/block/deepslate/redstone_ore_off.png");
+            list.add("assets/minecraft/textures/block/deepslate/redstone_ore_on.png");
+        }
 
         return list;
     }
@@ -227,11 +318,17 @@ public class HighlightManager {
                 }
             }
 
-            // Ensure the pack is registered and selected from the very beginning
+            // Ensure the pack is registered and selected with highest priority
             PackRepository repo = mc.getResourcePackRepository();
             repo.reload();
-            if (!repo.getSelectedIds().contains(PACK_ID)) {
-                List<String> selected = new ArrayList<>(repo.getSelectedIds());
+            List<String> selected = new ArrayList<>(repo.getSelectedIds());
+            if (!selected.contains(PACK_ID)) {
+                selected.add(PACK_ID);
+                repo.setSelected(selected);
+                mc.options.updateResourcePacks(repo);
+                mc.options.save();
+            } else if (!selected.get(selected.size() - 1).equals(PACK_ID)) {
+                selected.remove(PACK_ID);
                 selected.add(PACK_ID);
                 repo.setSelected(selected);
                 mc.options.updateResourcePacks(repo);
@@ -298,17 +395,26 @@ public class HighlightManager {
                 reloading = true;
                 lastReloadTime = System.currentTimeMillis();
 
-                if (!repo.getSelectedIds().contains(PACK_ID)) {
-                    List<String> selected = new ArrayList<>(repo.getSelectedIds());
-                    selected.add(PACK_ID);
-                    repo.setSelected(selected);
+                List<String> currentSelected = new ArrayList<>(repo.getSelectedIds());
+                boolean needUpdate = false;
+                if (!currentSelected.contains(PACK_ID)) {
+                    currentSelected.add(PACK_ID);
+                    needUpdate = true;
+                } else if (!currentSelected.get(currentSelected.size() - 1).equals(PACK_ID)) {
+                    currentSelected.remove(PACK_ID);
+                    currentSelected.add(PACK_ID);
+                    needUpdate = true;
+                }
+
+                if (needUpdate) {
+                    repo.setSelected(currentSelected);
                     // updateResourcePacks() calls mc.reloadResourcePacks() internally on change!
                     mc.options.updateResourcePacks(repo);
                     mc.options.save();
-                    LOGGER.info("[HighlightBlock] Pack selection updated via updateResourcePacks (single reload).");
+                    LOGGER.info("[HighlightBlock] Pack selection updated to top priority via updateResourcePacks.");
                     reloading = false;
                 } else {
-                    // Normal case: pack is already active. Trigger exactly ONE reload!
+                    // Normal case: pack is already active and at top priority. Trigger exactly ONE reload!
                     CompletableFuture<Void> future = mc.reloadResourcePacks();
                     if (future != null) {
                         future.whenComplete((res, err) -> {
