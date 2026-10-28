@@ -2,10 +2,10 @@ package community.wintercraft.highlightblock;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -80,19 +80,19 @@ public class HighlightBlockClient implements ClientModInitializer {
                 Component msg = Component.literal("[Highlight Block] ")
                         .withStyle(ChatFormatting.LIGHT_PURPLE)
                         .append(Component.literal(block.getName().getString()).withStyle(ChatFormatting.WHITE))
-                        .append(Component.literal(active ? " [Lila Umrandung Aktiv]" : " [Umrandung Entfernt]")
+                        .append(Component.literal(active ? " [Animierte Leuchtoutline AKTIV]" : " [Umrandung ENTFERNT]")
                                 .withStyle(active ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.GRAY));
                 client.player.sendSystemMessage(msg);
             }
         } else {
-            client.player.sendSystemMessage(Component.literal("[Highlight Block] Schaue einen Block an, um ihn mit Umrandung hervorzuheben!")
+            client.player.sendSystemMessage(Component.literal("[Highlight Block] Schaue einen Block an, um ihn hervorzuheben!")
                     .withStyle(ChatFormatting.RED));
         }
     }
 
     private void handleToggleAll(Minecraft client) {
         boolean enabled = HighlightManager.getInstance().toggleEnabled();
-        Component msg = Component.literal("[Highlight Block] Umrandungen sind jetzt ")
+        Component msg = Component.literal("[Highlight Block] Leucht-Umrandungen sind jetzt ")
                 .withStyle(ChatFormatting.LIGHT_PURPLE)
                 .append(Component.literal(enabled ? "AKTIVIERT" : "DEAKTIVIERT")
                         .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.RED));
@@ -127,6 +127,77 @@ public class HighlightBlockClient implements ClientModInitializer {
                                 }
                                 return 1;
                             }))
+                    .then(ClientCommands.literal("mode")
+                            .executes(context -> {
+                                HighlightManager.AnimationMode current = HighlightManager.getInstance().getAnimationMode();
+                                context.getSource().sendFeedback(Component.literal("[Highlight Block] Aktueller Modus: " + current.name() + " (/hb mode <neon|rainbow|cyan|gold|static>)").withStyle(ChatFormatting.LIGHT_PURPLE));
+                                return 1;
+                            })
+                            .then(ClientCommands.literal("neon")
+                                    .executes(context -> {
+                                        HighlightManager.getInstance().setAnimationMode(HighlightManager.AnimationMode.NEON_PURPLE);
+                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Modus gewechselt: Neon Lila (Pulsierend)").withStyle(ChatFormatting.LIGHT_PURPLE));
+                                        return 1;
+                                    }))
+                            .then(ClientCommands.literal("rainbow")
+                                    .executes(context -> {
+                                        HighlightManager.getInstance().setAnimationMode(HighlightManager.AnimationMode.RAINBOW);
+                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Modus gewechselt: Rainbow Chroma Wave").withStyle(ChatFormatting.AQUA));
+                                        return 1;
+                                    }))
+                            .then(ClientCommands.literal("cyan")
+                                    .executes(context -> {
+                                        HighlightManager.getInstance().setAnimationMode(HighlightManager.AnimationMode.ELECTRIC_CYAN);
+                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Modus gewechselt: Cyberpunk Cyan").withStyle(ChatFormatting.DARK_AQUA));
+                                        return 1;
+                                    }))
+                            .then(ClientCommands.literal("gold")
+                                    .executes(context -> {
+                                        HighlightManager.getInstance().setAnimationMode(HighlightManager.AnimationMode.AMBER_GOLD);
+                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Modus gewechselt: Golden Ore Glow").withStyle(ChatFormatting.GOLD));
+                                        return 1;
+                                    }))
+                            .then(ClientCommands.literal("static")
+                                    .executes(context -> {
+                                        HighlightManager.getInstance().setAnimationMode(HighlightManager.AnimationMode.STATIC);
+                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Modus gewechselt: Statisch").withStyle(ChatFormatting.WHITE));
+                                        return 1;
+                                    }))
+                    )
+                    .then(ClientCommands.literal("speed")
+                            .then(ClientCommands.literal("slow")
+                                    .executes(context -> {
+                                        HighlightManager.getInstance().setAnimationSpeed(0.5f);
+                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Geschwindigkeit: Langsam (0.5x)").withStyle(ChatFormatting.LIGHT_PURPLE));
+                                        return 1;
+                                    }))
+                            .then(ClientCommands.literal("normal")
+                                    .executes(context -> {
+                                        HighlightManager.getInstance().setAnimationSpeed(1.0f);
+                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Geschwindigkeit: Normal (1.0x)").withStyle(ChatFormatting.LIGHT_PURPLE));
+                                        return 1;
+                                    }))
+                            .then(ClientCommands.literal("fast")
+                                    .executes(context -> {
+                                        HighlightManager.getInstance().setAnimationSpeed(2.0f);
+                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Geschwindigkeit: Schnell (2.0x)").withStyle(ChatFormatting.LIGHT_PURPLE));
+                                        return 1;
+                                    }))
+                    )
+                    .then(ClientCommands.literal("halo")
+                            .then(ClientCommands.literal("on")
+                                    .executes(context -> {
+                                        HighlightManager.getInstance().setHaloEnabled(true);
+                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Leucht-Aura (Halo): AKTIVIERT").withStyle(ChatFormatting.LIGHT_PURPLE));
+                                        return 1;
+                                    }))
+                            .then(ClientCommands.literal("off")
+                                    .executes(context -> {
+                                        HighlightManager.getInstance().setHaloEnabled(false);
+                                        context.getSource().sendFeedback(Component.literal("[Highlight Block] Leucht-Aura (Halo): DEAKTIVIERT").withStyle(ChatFormatting.GRAY));
+                                        return 1;
+                                    }))
+                    )
             );
 
             // Shortcut /hb

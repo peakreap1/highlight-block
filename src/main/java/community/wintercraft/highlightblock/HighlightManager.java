@@ -20,15 +20,26 @@ public class HighlightManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final HighlightManager INSTANCE = new HighlightManager();
 
+    public enum AnimationMode {
+        NEON_PURPLE,
+        RAINBOW,
+        ELECTRIC_CYAN,
+        AMBER_GOLD,
+        STATIC
+    }
+
     private boolean enabled = true;
     private boolean outlineEnabled = true;
-    private boolean blockTintEnabled = false; // User requested outline instead of block-based fullbright
+    private boolean blockTintEnabled = false;
     private boolean fullbright = false;
     private boolean seeThrough = false; // No X-Ray: strictly occluded by walls
+    private boolean haloEnabled = true;
 
-    // Vibrant Glowing Electric Purple / Violet (ARGB: 0xFFD000FF)
-    private int outlineColor = 0xFFD000FF;
-    private float outlineWidth = 2.5f;
+    private AnimationMode animationMode = AnimationMode.NEON_PURPLE;
+    private float animationSpeed = 1.0f;
+    private float outlineWidth = 2.2f;
+    private float haloWidth = 5.2f;
+    private int outlineColor = 0xFFD000FF; // Vibrant electric purple
     private int highlightColor = 0xFFEE00;
 
     private final Set<String> highlightedBlockIds = new HashSet<>();
@@ -97,12 +108,30 @@ public class HighlightManager {
         save();
     }
 
-    public int getOutlineColor() {
-        return outlineColor;
+    public boolean isHaloEnabled() {
+        return haloEnabled;
     }
 
-    public void setOutlineColor(int outlineColor) {
-        this.outlineColor = outlineColor;
+    public void setHaloEnabled(boolean haloEnabled) {
+        this.haloEnabled = haloEnabled;
+        save();
+    }
+
+    public AnimationMode getAnimationMode() {
+        return animationMode;
+    }
+
+    public void setAnimationMode(AnimationMode animationMode) {
+        this.animationMode = animationMode;
+        save();
+    }
+
+    public float getAnimationSpeed() {
+        return animationSpeed;
+    }
+
+    public void setAnimationSpeed(float animationSpeed) {
+        this.animationSpeed = Math.max(0.1f, Math.min(5.0f, animationSpeed));
         save();
     }
 
@@ -111,7 +140,25 @@ public class HighlightManager {
     }
 
     public void setOutlineWidth(float outlineWidth) {
-        this.outlineWidth = outlineWidth;
+        this.outlineWidth = Math.max(0.5f, Math.min(10.0f, outlineWidth));
+        save();
+    }
+
+    public float getHaloWidth() {
+        return haloWidth;
+    }
+
+    public void setHaloWidth(float haloWidth) {
+        this.haloWidth = Math.max(1.0f, Math.min(15.0f, haloWidth));
+        save();
+    }
+
+    public int getOutlineColor() {
+        return outlineColor;
+    }
+
+    public void setOutlineColor(int outlineColor) {
+        this.outlineColor = outlineColor;
         save();
     }
 
@@ -213,8 +260,12 @@ public class HighlightManager {
             data.blockTintEnabled = this.blockTintEnabled;
             data.fullbright = this.fullbright;
             data.seeThrough = this.seeThrough;
+            data.haloEnabled = this.haloEnabled;
+            data.animationMode = this.animationMode != null ? this.animationMode.name() : "NEON_PURPLE";
+            data.animationSpeed = this.animationSpeed;
             data.outlineColor = this.outlineColor;
             data.outlineWidth = this.outlineWidth;
+            data.haloWidth = this.haloWidth;
             data.highlightColor = this.highlightColor;
             data.highlightedBlocks = this.highlightedBlockIds;
             try (FileWriter writer = new FileWriter(file)) {
@@ -237,8 +288,18 @@ public class HighlightManager {
                         this.blockTintEnabled = data.blockTintEnabled;
                         this.fullbright = data.fullbright;
                         this.seeThrough = data.seeThrough;
+                        this.haloEnabled = data.haloEnabled;
+                        if (data.animationMode != null) {
+                            try {
+                                this.animationMode = AnimationMode.valueOf(data.animationMode.toUpperCase());
+                            } catch (Exception ignored) {
+                                this.animationMode = AnimationMode.NEON_PURPLE;
+                            }
+                        }
+                        this.animationSpeed = data.animationSpeed > 0 ? data.animationSpeed : 1.0f;
                         this.outlineColor = data.outlineColor != 0 ? data.outlineColor : 0xFFD000FF;
-                        this.outlineWidth = data.outlineWidth > 0 ? data.outlineWidth : 2.5f;
+                        this.outlineWidth = data.outlineWidth > 0 ? data.outlineWidth : 2.2f;
+                        this.haloWidth = data.haloWidth > 0 ? data.haloWidth : 5.2f;
                         this.highlightColor = data.highlightColor != 0 ? data.highlightColor : 0xFFEE00;
                         if (data.highlightedBlocks != null) {
                             this.highlightedBlockIds.clear();
@@ -258,8 +319,12 @@ public class HighlightManager {
         boolean blockTintEnabled = false;
         boolean fullbright = false;
         boolean seeThrough = false;
+        boolean haloEnabled = true;
+        String animationMode = "NEON_PURPLE";
+        float animationSpeed = 1.0f;
         int outlineColor = 0xFFD000FF;
-        float outlineWidth = 2.5f;
+        float outlineWidth = 2.2f;
+        float haloWidth = 5.2f;
         int highlightColor = 0xFFEE00;
         Set<String> highlightedBlocks = new HashSet<>();
     }
