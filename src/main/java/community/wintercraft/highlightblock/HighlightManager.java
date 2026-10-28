@@ -63,7 +63,17 @@ public class HighlightManager {
     }
 
     public static boolean isReloading() {
-        return reloading || (System.currentTimeMillis() - lastReloadTime < 2000);
+        return reloading || (System.currentTimeMillis() - lastReloadTime < 2500);
+    }
+
+    public static boolean isReloading(Minecraft mc) {
+        if (reloading || (System.currentTimeMillis() - lastReloadTime < 2500)) {
+            return true;
+        }
+        if (mc != null && mc.gui != null && mc.gui.overlay() != null) {
+            return true;
+        }
+        return false;
     }
 
     public boolean isHighlighted(Block block) {
@@ -217,10 +227,10 @@ public class HighlightManager {
                 }
             }
 
-            // Ensure the pack is registered in selected packs
+            // Ensure the pack is registered and selected from the very beginning
             PackRepository repo = mc.getResourcePackRepository();
             repo.reload();
-            if (!highlightedBlockIds.isEmpty() && !repo.getSelectedIds().contains(PACK_ID)) {
+            if (!repo.getSelectedIds().contains(PACK_ID)) {
                 List<String> selected = new ArrayList<>(repo.getSelectedIds());
                 selected.add(PACK_ID);
                 repo.setSelected(selected);
@@ -280,43 +290,34 @@ public class HighlightManager {
                 }
 
                 // Synchronize pack selection in Minecraft
+                // The pack ALWAYS stays in repo.getSelectedIds()!
+                // This guarantees updateResourcePacks() does NOT trigger a second reload.
                 PackRepository repo = mc.getResourcePackRepository();
                 repo.reload();
 
-                List<String> selected = new ArrayList<>(repo.getSelectedIds());
-                boolean changed = false;
-
-                if (shouldBeActive) {
-                    if (!selected.contains(PACK_ID)) {
-                        selected.add(PACK_ID);
-                        changed = true;
-                    }
-                } else {
-                    if (selected.contains(PACK_ID)) {
-                        selected.remove(PACK_ID);
-                        changed = true;
-                    }
-                }
-
-                if (changed) {
-                    repo.setSelected(selected);
-                    mc.options.updateResourcePacks(repo);
-                    mc.options.save();
-                    LOGGER.info("[HighlightBlock] Pack selection updated. Selected: {}", repo.getSelectedIds());
-                }
-
-                // Debounce reload to prevent double loadscreens
                 reloading = true;
                 lastReloadTime = System.currentTimeMillis();
 
-                CompletableFuture<Void> future = mc.reloadResourcePacks();
-                if (future != null) {
-                    future.whenComplete((res, err) -> {
-                        reloading = false;
-                        LOGGER.info("[HighlightBlock] Reload finished successfully.");
-                    });
-                } else {
+                if (!repo.getSelectedIds().contains(PACK_ID)) {
+                    List<String> selected = new ArrayList<>(repo.getSelectedIds());
+                    selected.add(PACK_ID);
+                    repo.setSelected(selected);
+                    // updateResourcePacks() calls mc.reloadResourcePacks() internally on change!
+                    mc.options.updateResourcePacks(repo);
+                    mc.options.save();
+                    LOGGER.info("[HighlightBlock] Pack selection updated via updateResourcePacks (single reload).");
                     reloading = false;
+                } else {
+                    // Normal case: pack is already active. Trigger exactly ONE reload!
+                    CompletableFuture<Void> future = mc.reloadResourcePacks();
+                    if (future != null) {
+                        future.whenComplete((res, err) -> {
+                            reloading = false;
+                            LOGGER.info("[HighlightBlock] Single reload finished successfully.");
+                        });
+                    } else {
+                        reloading = false;
+                    }
                 }
             } catch (Exception e) {
                 reloading = false;

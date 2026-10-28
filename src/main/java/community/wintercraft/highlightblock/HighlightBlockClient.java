@@ -60,7 +60,7 @@ public class HighlightBlockClient implements ClientModInitializer {
 
     private void handleToggleTarget(Minecraft client) {
         // Prevent triggering while a reload is already taking place
-        if (HighlightManager.isReloading()) {
+        if (HighlightManager.isReloading(client)) {
             client.player.sendSystemMessage(Component.literal("[Highlight Block] Bitte kurz warten, Texturen werden noch geladen...")
                     .withStyle(ChatFormatting.GRAY));
             return;
