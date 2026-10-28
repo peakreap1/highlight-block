@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "community.wintercraft.highlightblock.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "BlockColorsMixin",
+    "BlockStateModelSetMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
